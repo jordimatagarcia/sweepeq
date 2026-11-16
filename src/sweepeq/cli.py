@@ -48,7 +48,24 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--range", type=float, nargs=2, default=(50.0, 10_000.0), metavar=("LO", "HI"))
     a.add_argument("--export", type=Path, help="write the result as REW-importable text")
     a.add_argument("--plot", type=Path, help="save a plot (needs the plot extra)")
+    d = sub.add_parser("design", help="design a correction filter from measurements")
+    d.add_argument("measurements", type=Path, nargs="+", help="saved .npz measurements")
+    d.add_argument("--cal", type=Path, help="microphone calibration file")
+    d.add_argument("--target", type=Path, help="target curve text file (default: flat)")
+    d.add_argument("--tilt", type=float, default=0.0, help="target tilt (dB/octave)")
+    d.add_argument("--bass", type=float, default=0.0, help="target bass shelf (dB)")
+    d.add_argument("--band", type=float, nargs=2, default=(20.0, 16_000.0), metavar=("LO", "HI"))
+    d.add_argument("--max-boost", type=float, default=6.0, help="dB")
+    d.add_argument("--smooth", type=float, default=6.0, help="1/N octave before inversion")
+    d.add_argument("--taps", type=int, default=4096)
+    d.add_argument("--phase", choices=("minimum", "linear"), default="minimum")
+    d.add_argument("--fs", type=int, default=48_000, help="sample rate of the filter")
+    d.add_argument("--fir", type=Path, help="write the FIR filter (.wav, 32-bit float)")
+    d.add_argument("--peq", type=int, default=0, help="also fit an N-band parametric EQ")
+    d.add_argument("--apo", type=Path, help="write the parametric EQ (Equalizer APO text)")
     args = parser.parse_args(argv)
+    if args.command == "design":
+        return _design(args)
     if args.command == "devices":
         import sounddevice as sd
 
@@ -138,6 +155,89 @@ def _plot(result: Curve, reference: Curve | None, path: Path) -> None:
     ax.legend()
     fig.tight_layout()
     fig.savefig(path, dpi=150)
+
+
+def _design(args: argparse.Namespace) -> int:
+    from sweepeq.analysis import apply_calibration, average, read_text_curve, response_curve
+    from sweepeq.apo import format_apo
+    from sweepeq.design import DesignSpec, correction_db, design_fir, target_curve
+    from sweepeq.measure import load_linear
+    from sweepeq.peq import PeqSpec, fit_peq
+
+    curves = []
+    valid_lo, valid_hi = 0.0, float("inf")
+    for path in args.measurements:
+        hir, fs, f1, f2 = load_linear(path)
+        freqs = np.geomspace(max(f1, 10.0), f2, 3000)
+        curves.append(response_curve(freqs, frequency_response(hir, freqs, fs)))
+        valid_lo, valid_hi = max(valid_lo, 2.0 * f1), min(valid_hi, f2 / 2.0)
+    # A measurement is only valid in its passband [2*f1, f2/2] (docs/measurement.md):
+    # outside it the sweep's own band edges look like a deep roll-off.
+    band = (max(float(args.band[0]), valid_lo), min(float(args.band[1]), valid_hi))
+    if band != (float(args.band[0]), float(args.band[1])):
+        print(
+            f"note: correction band limited to {band[0]:g}-{band[1]:g} Hz, the measurement's "
+            "valid range (start the sweep lower to correct lower)"
+        )
+    try:
+        spec = DesignSpec(
+            f_lo=band[0],
+            f_hi=band[1],
+            max_boost_db=args.max_boost,
+            smoothing=args.smooth,
+            fs=args.fs,
+            n_taps=args.taps,
+            phase=args.phase,
+        )
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    measured = average(curves)
+    if args.cal is not None:
+        measured = apply_calibration(measured, read_text_curve(args.cal))
+    base = read_text_curve(args.target) if args.target is not None else None
+    shape = target_curve(measured.freqs, args.tilt, args.bass)
+    target = Curve(shape.freqs, shape.db + (base.at(shape.freqs) if base else 0.0))
+    correction = correction_db(measured, target, spec)
+    design = design_fir(correction, spec)
+    grid = np.geomspace(band[0], band[1], 400)
+    err = design.response_db(grid) - correction.at(grid)
+    print(
+        f"FIR: {spec.n_taps} taps at {spec.fs} Hz, {spec.phase} phase, latency "
+        f"{design.latency_samples / spec.fs * 1e3:.1f} ms; matches the correction to "
+        f"{np.max(np.abs(err)):.2f} dB over {band[0]:g}-{band[1]:g} Hz"
+    )
+    print(
+        f"     peak gain {design.peak_gain_db:+.1f} dB (sine), worst case "
+        f"{design.worst_case_gain_db:+.1f} dB: "
+        f"set a preamp of {-max(design.peak_gain_db, 0.0):.1f} dB"
+    )
+    if args.fir is not None:
+        from scipy.io import wavfile
+
+        wavfile.write(args.fir, spec.fs, design.taps.astype(np.float32))
+        print(f"wrote {args.fir}")
+    if args.peq > 0:
+        fit = fit_peq(
+            correction,
+            PeqSpec(
+                n_bands=args.peq,
+                f_lo=band[0],
+                f_hi=band[1],
+                fs=spec.fs,
+                max_boost_db=args.max_boost,
+            ),
+        )
+        print(
+            f"PEQ: {args.peq} filters, error {fit.rms_error_db:.2f} dB rms, "
+            f"{fit.max_error_db:.2f} dB max"
+        )
+        text = format_apo(fit.preset)
+        print(text, end="")
+        if args.apo is not None:
+            args.apo.write_text(text, encoding="utf-8")
+            print(f"wrote {args.apo}")
+    return 0
 
 
 def _demo_plant(fs: int) -> Plant:

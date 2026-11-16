@@ -87,3 +87,14 @@ def parse_apo(text: str) -> Preset:
 
 def read_apo(path: Path) -> Preset:
     return parse_apo(path.read_text(encoding="utf-8", errors="replace"))
+
+
+def format_apo(preset: Preset) -> str:
+    """The preset as Equalizer APO text (what ``parse_apo`` reads back)."""
+    names = {"PK": "PK", "LS": "LSC", "HS": "HSC"}
+    lines = [f"Preamp: {preset.preamp_db:.1f} dB"]
+    for i, b in enumerate(preset.bands, start=1):
+        lines.append(
+            f"Filter {i}: ON {names[b.kind]} Fc {b.fc:.1f} Hz Gain {b.gain_db:.1f} dB Q {b.q:.2f}"
+        )
+    return "\n".join(lines) + "\n"
