@@ -62,3 +62,56 @@ To be filled in after the measurement:
 - **Smoothing.** Both smooth in power over 1/6 octave, but window shapes may differ
   slightly; differences show at sharp peaks and notches.
 - **Absolute level.** Not compared: REW calibrates to SPL, sweepeq reports relative level.
+
+## Informal first check: measuring an EQ preset on real hardware
+
+Before the REW validation, a first real-hardware check of the whole chain: measure a pair of
+wired headphones twice, without and with a parametric EQ preset (EasyEffects, 10 bands, in
+[`data/headphone_preset_apo.txt`](data/headphone_preset_apo.txt)), and compare the measured
+difference with the curve the preset's settings predict
+([`tools/compare_preset.py`](../tools/compare_preset.py)). The setup is deliberately crude:
+one earcup held against a laptop's built-in microphone, uncalibrated, not sealed.
+
+```bash
+uv run python tools/compare_preset.py off.npz on.npz docs/data/headphone_preset_apo.txt \
+    --fs-eq 96000 --plot docs/images/preset_vs_measured.png
+```
+
+Both measurements: 3 s sweep at −20 dBFS, latency 61 ms, peak-to-noise 70 and 73 dB, no
+clipping.
+
+| Band | Shape error (RMS, after removing a +2.8 dB level offset) | Max |
+|---|---|---|
+| 100 Hz–2 kHz | 1.2 dB | 2.9 dB |
+| 2–5 kHz | 2.7 dB | 6.2 dB |
+| 5–16 kHz | 4.6 dB | 8.9 dB |
+
+![EQ preset: measured vs predicted](images/preset_vs_measured.png)
+
+What it shows:
+
+- Where the acoustic setup is stable (100 Hz–2 kHz) the measured EQ follows the predicted
+  one to about 1 dB, including a +4.4 dB, Q 2.7 bump at 217 Hz.
+- Above 2 kHz the shape is right but the levels are not: an unsealed earcup on a laptop
+  microphone changes by several dB with millimetres of movement there, and the largest error
+  sits in a deep notch of the headphones at 3.6 kHz, where a tiny shift moves the level a
+  lot. Below 100 Hz the leak in the seal dominates.
+- The +2.8 dB level offset (part of the preset's −4.2 dB preamp not showing) is not
+  explained by this data: a slightly different earcup pressure between the runs is the
+  likely cause.
+
+So the processing chain works on real audio I/O; the remaining errors are the setup's. The
+±1 dB target above still needs the measurement microphone.
+
+Practical lessons from getting this run, all with PipeWire:
+
+- **Address devices by name** (`--device pipewire`), not by index: indices shift when
+  PipeWire opens or releases hardware devices, and an index that pointed at the PipeWire
+  device one minute pointed at a different device the next.
+- **Closing the EasyEffects window does not stop it.** Its background service keeps its
+  virtual sink and keeps moving new application streams into it; with the effects bypassed
+  nothing was forwarded to the headphones, so the sweep was silent. `easyeffects -q` stops
+  it.
+- **Mind the headroom.** Without the preset's −4.2 dB preamp, full system volume made the
+  headphone output distort, and with the earcup sealed over the microphone a −14 dBFS sweep
+  clipped the input; −20 dBFS did not.

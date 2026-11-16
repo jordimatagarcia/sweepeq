@@ -25,6 +25,33 @@ def peaking_biquad(f0: float, gain_db: float, q: float, fs: float) -> FloatArray
     return np.concatenate([b / den[0], den / den[0]])
 
 
+def shelf_biquad(kind: str, f0: float, gain_db: float, q: float, fs: float) -> FloatArray:
+    """Low (``kind="low"``) or high (``"high"``) shelving section with a Q-defined slope
+    (RBJ cookbook)."""
+    a = 10.0 ** (gain_db / 40.0)
+    w0 = 2.0 * np.pi * f0 / fs
+    c, alpha = np.cos(w0), np.sin(w0) / (2.0 * q)
+    r = 2.0 * np.sqrt(a) * alpha
+    if kind == "low":
+        b = [
+            a * ((a + 1) - (a - 1) * c + r),
+            2 * a * ((a - 1) - (a + 1) * c),
+            a * ((a + 1) - (a - 1) * c - r),
+        ]
+        den = [(a + 1) + (a - 1) * c + r, -2 * ((a - 1) + (a + 1) * c), (a + 1) + (a - 1) * c - r]
+    elif kind == "high":
+        b = [
+            a * ((a + 1) + (a - 1) * c + r),
+            -2 * a * ((a - 1) + (a + 1) * c),
+            a * ((a + 1) + (a - 1) * c - r),
+        ]
+        den = [(a + 1) - (a - 1) * c + r, 2 * ((a - 1) - (a + 1) * c), (a + 1) - (a - 1) * c - r]
+    else:
+        raise ValueError(f"unknown shelf kind {kind!r}")
+    bb, dd = np.asarray(b), np.asarray(den)
+    return np.concatenate([bb / dd[0], dd / dd[0]])
+
+
 @dataclass(frozen=True)
 class Plant:
     fs: int = 48_000
