@@ -28,8 +28,9 @@ cites the source it follows.
 ## Target curves and reference data
 - S. E. Olive et al., "A statistical model that predicts listeners' preference ratings of
   around-ear and on-ear headphones", 144th AES Convention, 2018 (Harman target).
-- J. Pasanen, AutoEQ: https://github.com/jaakkopasanen/AutoEq (public measurements and
-  corrections used for validation).
+- J. Pasanen, AutoEq: https://github.com/jaakkopasanen/AutoEq (public measurements and
+  corrections used for validation; the HD 600 results in `testdata/autoeq/` are from it,
+  measured by oratory1990, MIT license).
 - Room EQ Wizard (REW): https://www.roomeqwizard.com (reference measurements).
 
 ## Real-time convolution

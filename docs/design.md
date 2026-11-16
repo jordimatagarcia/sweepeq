@@ -98,5 +98,42 @@ Other checks:
 - **Parametric EQ of the simulated device's correction:** 4 filters 1.2 dB RMS, 6 filters
   0.24 dB, 8 filters 0.07 dB.
 
-Still to do: comparison with AutoEQ's published corrections for a measured headphone, and
-correcting a real measurement once the M2 microphone setup is in place.
+## Comparison with AutoEq
+
+[AutoEq](https://github.com/jaakkopasanen/AutoEq) publishes corrections for thousands of
+headphones. Its results for the Sennheiser HD 600, measured by oratory1990, are in
+[`testdata/autoeq/`](../testdata/autoeq/) (MIT-licensed, see the NOTICE there): the
+measurement, the target, and AutoEq's correction. sweepeq designed its own correction from
+the same measurement and target, with the same +6 dB boost limit
+([`tools/compare_autoeq.py`](../tools/compare_autoeq.py), checked by
+`tests/test_autoeq.py`):
+
+| Band | sweepeq − AutoEq correction (level removed): RMS | Max |
+|---|---|---|
+| 20–200 Hz | 0.21 dB | 0.52 dB |
+| 200 Hz–2 kHz | 0.01 dB | 0.03 dB |
+| 2–6 kHz | 0.07 dB | 0.19 dB |
+| 6–10 kHz | 1.22 dB | 2.49 dB |
+| 10–20 kHz | 0.97 dB | 2.67 dB |
+
+| Headphone vs target, 20 Hz–10 kHz (1/6 octave) | RMS | Max |
+|---|---|---|
+| Uncorrected | 3.73 dB | 11.5 dB |
+| AutoEq correction | 1.18 dB | 5.25 dB |
+| sweepeq correction | 1.20 dB | 5.52 dB |
+| AutoEq 10-band parametric EQ | 1.27 dB | 5.10 dB |
+
+![sweepeq vs AutoEq for the HD 600](images/autoeq_hd600.png)
+
+- **Below 6 kHz the two corrections are the same curve** to within 0.03 dB from 200 Hz to
+  2 kHz. Below 50 Hz they differ by up to 0.5 dB: both hit the +6 dB limit there,
+  sweepeq with a soft knee (5.75 dB) and AutoEq with a hard cap.
+- **Above 6 kHz they differ by design.** AutoEq follows the treble more loosely and leaves
+  the 9.5 kHz peak and notch partly uncorrected; sweepeq follows the 1/6-octave detail.
+  That does not make sweepeq better: treble measurements depend on how the headphone sits,
+  so not chasing treble detail is a reasonable choice, and heavier treble smoothing would be
+  a natural option to add.
+- **The residual 5 dB is the bass below 50 Hz,** which needs about 11 dB of boost and gets
+  6 dB from both tools.
+
+Still to do: correcting a real measurement once the M2 microphone setup is in place.
