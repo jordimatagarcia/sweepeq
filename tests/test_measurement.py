@@ -155,3 +155,11 @@ def test_save_and_cli(tmp_path) -> None:  # type: ignore[no-untyped-def]
     data = np.load(out)
     assert int(data["fs"]) == 48_000
     assert data["ir_1"].size > 0 and data["ir_3"].size > 0
+
+
+def test_latency_and_peak_to_noise() -> None:
+    quiet = measure(SPEC, SimulatedRecorder(Plant(fs=FS, delay_samples=480, noise_rms=1e-5)))
+    assert quiet.latency_s * 1e3 == pytest.approx(10.0, abs=0.2)
+    noisy = measure(SPEC, SimulatedRecorder(Plant(fs=FS, delay_samples=480, noise_rms=1e-2)))
+    assert quiet.peak_to_noise_db > 60.0
+    assert noisy.peak_to_noise_db < quiet.peak_to_noise_db - 50.0

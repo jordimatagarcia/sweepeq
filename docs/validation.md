@@ -13,6 +13,14 @@ normalised at 1 kHz.
 - Set the level once so the sweep is clearly audible but nowhere near clipping (sweepeq
   warns if the recording peaks above −0.1 dBFS).
 
+- **Bypass any system audio effects** (EasyEffects, PulseEffects, PipeWire filter chains,
+  the laptop vendor's "audio enhancement"): EQ, compression and noise suppression on the
+  output or the microphone input change what is measured. In EasyEffects, use the global
+  bypass for both output and input, and keep it bypassed for the REW measurement too.
+- `sweepeq measure` prints the latency and the impulse response's peak-to-noise ratio, and
+  warns below 40 dB (on a first laptop test, a microphone hearing only headphone leakage
+  gave 23 dB; the earcup held against it gave 46 dB).
+
 ## Procedure
 
 ```bash

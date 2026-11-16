@@ -7,7 +7,14 @@ from pathlib import Path
 import numpy as np
 
 from sweepeq.analysis import Curve
-from sweepeq.measure import CLIP_LEVEL, Measurement, Recorder, SimulatedRecorder, measure
+from sweepeq.measure import (
+    CLIP_LEVEL,
+    LOW_PNR_DB,
+    Measurement,
+    Recorder,
+    SimulatedRecorder,
+    measure,
+)
 from sweepeq.plant import Plant, peaking_biquad
 from sweepeq.response import frequency_response, harmonic_distortion, hd_range, to_db
 from sweepeq.sweep import SweepSpec
@@ -143,6 +150,13 @@ def _report(m: Measurement) -> None:
     if m.peak_level >= CLIP_LEVEL:
         print(
             f"warning: recording peaked at {m.peak_level:.3f}: it may have clipped", file=sys.stderr
+        )
+    print(f"latency {m.latency_s * 1e3:.1f} ms, peak-to-noise {m.peak_to_noise_db:.0f} dB")
+    if m.peak_to_noise_db < LOW_PNR_DB:
+        print(
+            f"warning: peak-to-noise below {LOW_PNR_DB:.0f} dB: the microphone may not be "
+            "hearing the device, or the level is too low",
+            file=sys.stderr,
         )
     freqs = np.array([f for f in REPORT_FREQS if 2 * m.spec.f1 <= f <= m.spec.f2 / 2])
     mag = to_db(frequency_response(m.linear, freqs, fs))

@@ -67,6 +67,13 @@ class Measurement:
     """Linear response first, then harmonics 2, 3, …"""
     peak_level: float
     """Recording peak (full scale = 1): close to 1 means it may have clipped."""
+    latency_s: float
+    """Arrival time of the linear impulse response's peak: the playback-to-recording
+    latency plus the acoustic path (and a few samples of the measurement's own band limit)."""
+    peak_to_noise_db: float
+    """Linear impulse response peak relative to the noise floor of the deconvolution, taken
+    where neither the linear nor the harmonic responses are. Below ``LOW_PNR_DB`` the
+    measurement is mostly noise (e.g. the microphone isn't hearing the device)."""
 
     @property
     def linear(self) -> HarmonicIr:
@@ -94,6 +101,7 @@ def load_linear(path: Path) -> tuple[HarmonicIr, int, float, float]:
 
 
 CLIP_LEVEL = 0.99
+LOW_PNR_DB = 40.0
 
 
 def measure(spec: SweepSpec, recorder: Recorder, n_harmonics: int = 5) -> Measurement:
@@ -103,4 +111,23 @@ def measure(spec: SweepSpec, recorder: Recorder, n_harmonics: int = 5) -> Measur
     recorded = recorder.play_record(out, spec.fs)
     peak = float(np.max(np.abs(recorded)))
     h = deconvolve(recorded, sweep, spec)
-    return Measurement(spec, recorded, separate(h, spec, n_max=n_harmonics), peak)
+    harmonics = separate(h, spec, n_max=n_harmonics)
+    linear = harmonics[0]
+    k = int(np.argmax(np.abs(linear.ir)))
+    latency = k / spec.fs + linear.offset_s
+    return Measurement(
+        spec, recorded, harmonics, peak, latency, _peak_to_noise(h, linear, spec, n_harmonics)
+    )
+
+
+def _peak_to_noise(h: FloatArray, linear: HarmonicIr, spec: SweepSpec, n_max: int) -> float:
+    """Peak of the linear response over the RMS of the deconvolution result between the
+    end of the linear window and the start of the highest harmonic's (nan if that gap is
+    too short to estimate from)."""
+    start = len(linear.ir) + round(linear.offset_s * spec.fs) + round(0.01 * spec.fs)
+    stop = len(h) - round(spec.harmonic_delay_s(n_max) * spec.fs) - round(0.01 * spec.fs)
+    if stop - start < round(0.05 * spec.fs):
+        return float("nan")
+    noise = float(np.sqrt(np.mean(h[start:stop] ** 2)))
+    peak = float(np.max(np.abs(linear.ir)))
+    return float("inf") if noise == 0.0 else 20.0 * float(np.log10(peak / noise))
