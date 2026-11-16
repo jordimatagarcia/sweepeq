@@ -1,0 +1,2 @@
+# Email addresses allowed as git author and committer in this repository (one per line).
+157473246+jordimatagarcia@users.noreply.github.com

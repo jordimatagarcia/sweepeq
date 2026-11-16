@@ -1,0 +1,30 @@
+[project]
+name = "sweepeq"
+version = "0.0.1"
+description = "Loudspeaker and headphone measurement and EQ: sweep measurement, inverse-filter design and a real-time Rust convolution engine."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Jordi Mata Garcia" }]
+requires-python = ">=3.12"
+dependencies = ["numpy>=2.0", "scipy>=1.13"]
+
+[dependency-groups]
+dev = ["mypy", "pytest", "ruff"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "N", "RUF"]
+
+[tool.mypy]
+files = ["src", "tests"]
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers"]
