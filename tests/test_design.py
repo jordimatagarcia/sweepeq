@@ -206,3 +206,30 @@ def test_design_cli(tmp_path: Path) -> None:
     fs, taps = wavfile.read(fir)
     assert fs == 48_000 and len(taps) == 2048 and taps.dtype == np.float32
     assert len(read_apo(apo).bands) == 4
+
+
+def test_design_cli_corrects_the_treble(tmp_path: Path) -> None:
+    # Review fix: the CLI limited correction to [2*f1, f2/2] (40 Hz-10 kHz for a 20 Hz-20 kHz
+    # sweep), although the measurement is accurate to 17.8 kHz. A +6 dB peak at 14 kHz must
+    # now be corrected, and nothing outside the valid range may be read.
+    from scipy.io import wavfile
+
+    from sweepeq.cli import main
+    from sweepeq.design import fir_response_db
+    from sweepeq.measure import SimulatedRecorder, measure
+    from sweepeq.sweep import SweepSpec
+
+    plant = Plant(fs=FS, sos=np.vstack([peaking_biquad(14_000.0, 6.0, 3.0, FS)]))
+    m = measure(SweepSpec(duration_s=2.0), SimulatedRecorder(plant))
+    path, fir = tmp_path / "m.npz", tmp_path / "f.wav"
+    m.save(path)
+    assert main(["design", str(path), "--fir", str(fir), "--smooth", "0"]) == 0
+    _, taps = wavfile.read(fir)
+    g = np.array([1000.0, 14_000.0])
+    corrected = fir_response_db(taps.astype(np.float64), g, FS) + 20 * np.log10(
+        np.abs(plant.linear_response(g))
+    )
+    assert corrected[1] - corrected[0] == pytest.approx(0.0, abs=0.5)
+    # below the valid range (28 Hz) the correction fades out instead of reading the roll-off
+    low = fir_response_db(taps.astype(np.float64), np.array([12.0, 20.0]), FS)
+    assert np.max(np.abs(low)) < 0.5

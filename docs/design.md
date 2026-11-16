@@ -31,9 +31,11 @@ result worse a short distance away (Norcross et al. 2004).
 5. **Boost limit.** Boosts are then capped with a soft knee (6 dB by default): exact for
    boosts well below the limit, never above it.
 6. **Band.** Outside the correction band the correction fades to 0 dB over half an octave.
-   The band is also limited to the measurement's valid range, `[2·f1, f2/2]` of its sweep
-   (see [measurement.md](measurement.md)); outside it, the sweep's own band edges look
-   like a deep roll-off.
+   The band is also limited to the measurement's valid range, inside the deconvolution's
+   regularisation tapers: 28 Hz–17.8 kHz for a 20 Hz–20 kHz sweep
+   (`deconv.valid_range`). Outside it the measurement rolls off steeply (9 dB at 25 Hz,
+   59 dB at 18.5 kHz). Beyond that range the measured curve is held at its edge values,
+   so the band-edge fade never reads the roll-off as something to correct.
 
 ### FIR filter
 
@@ -135,5 +137,18 @@ the same measurement and target, with the same +6 dB boost limit
   a natural option to add.
 - **The residual 5 dB is the bass below 50 Hz,** which needs about 11 dB of boost and gets
   6 dB from both tools.
+
+## Review fixes
+
+A review after M3 found two bugs, each now covered by a test that fails without the fix:
+
+- **`sweepeq design` left the treble uncorrected.** It limited the correction to
+  `[2·f1, f2/2]`, the conservative band the M1 tests use (40 Hz–10 kHz for a
+  20 Hz–20 kHz sweep), although the measurement is accurate to within 0.01 dB from 28 Hz
+  to 17.8 kHz. A +6 dB peak at 14 kHz went uncorrected. The band now reaches the edges of
+  the regularisation tapers, with the measured curve held beyond them.
+- **Unsupported filters in an APO preset were silently dropped.** A preset with a
+  high-pass, low-pass or notch filter was read as if that filter did not exist. Enabled
+  filters of unsupported types are now an error.
 
 Still to do: correcting a real measurement once the M2 microphone setup is in place.

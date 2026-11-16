@@ -57,3 +57,17 @@ def test_peaking_filter_needs_q() -> None:
 def test_empty_preset_is_flat() -> None:
     preset = parse_apo("nothing")
     np.testing.assert_allclose(preset.response_db(np.array([100.0, 1000.0]), FS), 0.0)
+
+
+@pytest.mark.parametrize(
+    "line",
+    ["Filter 1: ON HP Fc 80 Hz", "Filter 2: ON NO Fc 500 Hz", "Filter: ON LP Fc 15000 Hz Q 0.7"],
+)
+def test_unsupported_enabled_filters_are_errors(line: str) -> None:
+    # Review fix: these were silently dropped, so the preset read as a different curve.
+    with pytest.raises(ValueError, match="unsupported filter"):
+        parse_apo(f"Preamp: -3 dB\n{line}\nFilter 3: ON PK Fc 1000 Hz Gain 3 dB Q 1\n")
+
+
+def test_disabled_unsupported_filters_are_ignored() -> None:
+    assert len(parse_apo("Filter 1: OFF HP Fc 80 Hz\n").bands) == 0

@@ -52,6 +52,14 @@ def deconvolve(recorded: FloatArray, sweep: FloatArray, spec: SweepSpec) -> Floa
     return np.asarray(h, dtype=np.float64)
 
 
+def valid_range(f1: float, f2: float) -> tuple[float, float]:
+    """Frequencies over which a measurement with sweep band ``[f1, f2]`` is accurate: inside
+    the regularisation tapers (``LOW_TAPER_OCT`` above f1, ``HIGH_TAPER_OCT`` below f2).
+    Outside it the measurement rolls off steeply (about 9 dB at 25 Hz and 59 dB at 18.5 kHz
+    for a 20 Hz-20 kHz sweep), so nothing should be corrected from data there."""
+    return f1 * 2.0**LOW_TAPER_OCT, f2 * 2.0**-HIGH_TAPER_OCT
+
+
 def minimum_phase(mag: FloatArray, n_fft: int) -> FloatArray:
     """Phase (rad) of the minimum-phase response with magnitude ``mag`` on the rfft grid of
     an ``n_fft``-point transform: fold the real cepstrum of ``ln|H|`` onto positive

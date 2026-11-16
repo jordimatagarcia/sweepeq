@@ -160,6 +160,7 @@ def _plot(result: Curve, reference: Curve | None, path: Path) -> None:
 def _design(args: argparse.Namespace) -> int:
     from sweepeq.analysis import apply_calibration, average, read_text_curve, response_curve
     from sweepeq.apo import format_apo
+    from sweepeq.deconv import valid_range
     from sweepeq.design import DesignSpec, correction_db, design_fir, target_curve
     from sweepeq.measure import load_linear
     from sweepeq.peq import PeqSpec, fit_peq
@@ -168,16 +169,18 @@ def _design(args: argparse.Namespace) -> int:
     valid_lo, valid_hi = 0.0, float("inf")
     for path in args.measurements:
         hir, fs, f1, f2 = load_linear(path)
-        freqs = np.geomspace(max(f1, 10.0), f2, 3000)
+        lo, hi = valid_range(f1, f2)
+        freqs = np.geomspace(lo, hi, 3000)
         curves.append(response_curve(freqs, frequency_response(hir, freqs, fs)))
-        valid_lo, valid_hi = max(valid_lo, 2.0 * f1), min(valid_hi, f2 / 2.0)
-    # A measurement is only valid in its passband [2*f1, f2/2] (docs/measurement.md):
-    # outside it the sweep's own band edges look like a deep roll-off.
+        valid_lo, valid_hi = max(valid_lo, lo), min(valid_hi, hi)
+    # Correct only where the measurement is valid. The curve is evaluated on a grid
+    # reaching past that range, holding its edge values there (Curve.at does), so the
+    # band-edge fade never reads data from outside it.
     band = (max(float(args.band[0]), valid_lo), min(float(args.band[1]), valid_hi))
     if band != (float(args.band[0]), float(args.band[1])):
         print(
-            f"note: correction band limited to {band[0]:g}-{band[1]:g} Hz, the measurement's "
-            "valid range (start the sweep lower to correct lower)"
+            f"note: correction band limited to {band[0]:.0f}-{band[1]:.0f} Hz, the "
+            "measurement's valid range (widen the sweep to correct further)"
         )
     try:
         spec = DesignSpec(
@@ -195,17 +198,19 @@ def _design(args: argparse.Namespace) -> int:
     measured = average(curves)
     if args.cal is not None:
         measured = apply_calibration(measured, read_text_curve(args.cal))
+    grid = np.geomspace(10.0, args.fs / 2.0, 4000)
+    measured = Curve(grid, measured.at(grid))
     base = read_text_curve(args.target) if args.target is not None else None
     shape = target_curve(measured.freqs, args.tilt, args.bass)
     target = Curve(shape.freqs, shape.db + (base.at(shape.freqs) if base else 0.0))
     correction = correction_db(measured, target, spec)
     design = design_fir(correction, spec)
-    grid = np.geomspace(band[0], band[1], 400)
-    err = design.response_db(grid) - correction.at(grid)
+    check = np.geomspace(band[0], band[1], 400)
+    err = design.response_db(check) - correction.at(check)
     print(
         f"FIR: {spec.n_taps} taps at {spec.fs} Hz, {spec.phase} phase, latency "
         f"{design.latency_samples / spec.fs * 1e3:.1f} ms; matches the correction to "
-        f"{np.max(np.abs(err)):.2f} dB over {band[0]:g}-{band[1]:g} Hz"
+        f"{np.max(np.abs(err)):.2f} dB over {band[0]:.0f}-{band[1]:.0f} Hz"
     )
     print(
         f"     peak gain {design.peak_gain_db:+.1f} dB (sine), worst case "
@@ -218,6 +223,9 @@ def _design(args: argparse.Namespace) -> int:
         wavfile.write(args.fir, spec.fs, design.taps.astype(np.float32))
         print(f"wrote {args.fir}")
     if args.peq > 0:
+        if band[1] >= spec.fs / 2:
+            print("error: the parametric EQ needs the band to end below fs/2", file=sys.stderr)
+            return 2
         fit = fit_peq(
             correction,
             PeqSpec(

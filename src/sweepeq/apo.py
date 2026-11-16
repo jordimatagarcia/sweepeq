@@ -8,7 +8,9 @@ This is the format AutoEQ publishes and EasyEffects imports and exports, e.g.::
     Filter 3: ON HSC Fc 10000 Hz Gain -4.0 dB Q 0.70
 
 Supported filter types: PK (peaking), LSC / LS (low shelf), HSC / HS (high shelf), all as
-RBJ cookbook biquads with the given Q. Disabled (OFF) filters and other lines are ignored.
+RBJ cookbook biquads with the given Q. Disabled (OFF) filters and lines that are not
+filters are ignored; an enabled filter of any other type (high-pass, notch, ...) is an
+error, so a preset is never silently read as a different curve.
 """
 
 import re
@@ -29,6 +31,7 @@ _FILTER = re.compile(
     r"(?:\s+Q\s+(?P<q>[-\d.eE+]+))?",
     re.IGNORECASE,
 )
+_ANY_FILTER = re.compile(r"Filter\s*\d*\s*:\s*ON\b", re.IGNORECASE)
 _PREAMP = re.compile(r"Preamp\s*:\s*(?P<db>[-\d.eE+]+)\s*dB", re.IGNORECASE)
 DEFAULT_SHELF_Q = 0.7071
 
@@ -82,6 +85,10 @@ def parse_apo(text: str) -> Preset:
                 raise ValueError(f"peaking filter without Q: {line.strip()!r}")
             q = float(m["q"]) if m["q"] is not None else DEFAULT_SHELF_Q
             bands.append(Band(kind, float(m["fc"]), float(m["gain"]), q))
+        elif _ANY_FILTER.search(line):
+            raise ValueError(
+                f"unsupported filter (only PK, LSC/LS and HSC/HS are): {line.strip()!r}"
+            )
     return Preset(preamp, tuple(bands))
 
 

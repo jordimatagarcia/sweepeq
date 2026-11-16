@@ -66,7 +66,7 @@ flat filter, its harmonic levels are known exactly. A 3 s sweep at 48 kHz is use
 
 | Target | Result |
 |---|---|
-| Magnitude within 0.1 dB in the passband [2·f1, f2/2] (three EQ bands, gain 0.7, noise −80 dBFS, delays up to 0.1 s) | max error 0.003 dB |
+| Magnitude within 0.1 dB in the test band [2·f1, f2/2] (the measurement is accurate further, over 28 Hz–17.8 kHz for a 20 Hz–20 kHz sweep, `deconv.valid_range`) (three EQ bands, gain 0.7, noise −80 dBFS, delays up to 0.1 s) | max error 0.003 dB |
 | Flat system | within 0.01 dB |
 | Delay to the sample (pure delay, and with EQ relative to the same EQ) | within 0.01 samples |
 | 2nd and 3rd harmonic levels within 1 dB (four mixes of a2 and a3, down to −64 dB) | within 1 dB over their valid range |
