@@ -3,7 +3,14 @@
 Measure a loudspeaker's or headphone's frequency response, design a correction filter, and
 run it in real time in Rust, with every step checked against an independent reference.
 
-**Status:** early development (setup). See the milestones below.
+**Status:** M1 (sweep measurement) done. See the milestones below and
+[docs/measurement.md](docs/measurement.md).
+
+```bash
+uv run sweepeq simulate                      # measure a simulated device, no hardware
+uv sync --extra audio
+uv run sweepeq measure --device 2 --out m.npz  # through a sound card
+```
 
 | Part | What it does |
 |---|---|
@@ -14,7 +21,7 @@ run it in real time in Rust, with every step checked against an independent refe
 
 ## Milestones
 
-1. Sweep measurement (exponential sine sweep, impulse response, harmonic distortion)
+1. ✅ Sweep measurement (synchronized exponential sweep, impulse response, harmonic distortion)
 2. Real measurements and analysis, validated against REW
 3. Correction filter design (regularised inversion, target curves, boost limits)
 4. Rust real-time engine

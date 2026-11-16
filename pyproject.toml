@@ -6,7 +6,13 @@ readme = "README.md"
 license = "MIT"
 authors = [{ name = "Jordi Mata Garcia" }]
 requires-python = ">=3.12"
-dependencies = ["numpy>=2.0", "scipy>=1.13"]
+dependencies = ["numpy>=2.1", "scipy>=1.13"]
+
+[project.optional-dependencies]
+audio = ["sounddevice>=0.5"]
+
+[project.scripts]
+sweepeq = "sweepeq.cli:main"
 
 [dependency-groups]
 dev = ["mypy", "pytest", "ruff"]
@@ -24,6 +30,10 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "N", "RUF"]
 [tool.mypy]
 files = ["src", "tests"]
 strict = true
+
+[[tool.mypy.overrides]]
+module = ["sounddevice", "scipy", "scipy.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

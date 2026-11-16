@@ -8,8 +8,14 @@ cites the source it follows.
   technique", 108th AES Convention, 2000.
 - A. Farina, "Advancements in impulse response measurements by sine sweeps", 122nd AES
   Convention, 2007.
+- A. Novak, P. Lotton and L. Simon, "Synchronized swept-sine: theory, application, and
+  implementation", J. Audio Eng. Soc. 63(10), 2015.
 - S. Müller and P. Massarani, "Transfer-function measurement with sweeps", J. Audio Eng. Soc.
   49(6), 2001.
+
+## Simulated devices
+- R. Bristow-Johnson, "Cookbook formulae for audio equalizer biquad filter coefficients"
+  (the "Audio EQ Cookbook"), W3C Audio WG note.
 
 ## Inverse filter design
 - O. Kirkeby, P. A. Nelson, H. Hamada and F. Orduna-Bustamante, "Fast deconvolution of
