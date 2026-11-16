@@ -1,6 +1,6 @@
 [project]
 name = "sweepeq"
-version = "0.0.1"
+version = "0.1.0"
 description = "Loudspeaker and headphone measurement and EQ: sweep measurement, inverse-filter design and a real-time Rust convolution engine."
 readme = "README.md"
 license = "MIT"

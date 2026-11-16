@@ -1,0 +1,34 @@
+name: release
+
+# Push a tag like v0.1.0 to build the engine binary (Linux x86-64), the Python package and
+# the engine's Python wheel, and attach them to a GitHub release for that tag.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: astral-sh/setup-uv@v6
+      - run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+      - name: Engine binary
+        run: |
+          cargo build --release --manifest-path engine/Cargo.toml -p sweepeq-cli
+          mkdir -p dist
+          tar -czf "dist/sweepeq-engine-${GITHUB_REF_NAME}-x86_64-linux.tar.gz" \
+            -C engine/target/release sweepeq-engine
+      - name: Python package
+        run: uv build --out-dir dist
+      - name: Engine Python wheel
+        run: uvx maturin build --release --manifest-path engine/sweepeq-py/Cargo.toml --out dist
+      - run: (cd dist && sha256sum * > SHA256SUMS)
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "sweepeq $GITHUB_REF_NAME" --generate-notes
