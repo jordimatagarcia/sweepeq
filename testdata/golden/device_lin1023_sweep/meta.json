@@ -1,0 +1,6 @@
+{
+  "taps": 1023,
+  "samples": 12000,
+  "fs": 48000,
+  "note": "linear-phase correction, odd length; exponential sweep"
+}

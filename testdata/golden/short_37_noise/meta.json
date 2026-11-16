@@ -1,0 +1,6 @@
+{
+  "taps": 37,
+  "samples": 12000,
+  "fs": 48000,
+  "note": "a 37-tap filter: shorter than any block size"
+}

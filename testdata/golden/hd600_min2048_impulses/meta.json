@@ -1,0 +1,6 @@
+{
+  "taps": 2048,
+  "samples": 12000,
+  "fs": 48000,
+  "note": "minimum-phase HD 600 correction (AutoEq data); three impulses"
+}

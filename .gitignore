@@ -18,3 +18,8 @@ engine/target/
 recordings/
 *.wav
 !testdata/**/*.wav
+
+# Fuzzing
+engine/fuzz/target/
+corpus/
+crash-*

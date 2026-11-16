@@ -1,0 +1,6 @@
+{
+  "taps": 4096,
+  "samples": 12000,
+  "fs": 48000,
+  "note": "minimum-phase correction of a 4-band simulated device; white noise"
+}

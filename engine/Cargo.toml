@@ -1,5 +1,5 @@
 [workspace]
-members = ["sweepeq-core"]
+members = ["sweepeq-core", "sweepeq-cli", "sweepeq-py"]
 resolver = "2"
 
 [workspace.package]

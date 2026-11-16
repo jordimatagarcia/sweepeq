@@ -1,0 +1,21 @@
+[package]
+name = "sweepeq-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+sweepeq-core = { path = "../sweepeq-core" }
+
+[[bin]]
+name = "convolve"
+path = "fuzz_targets/convolve.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]

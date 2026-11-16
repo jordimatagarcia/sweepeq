@@ -20,6 +20,42 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - run: sudo apt-get update && sudo apt-get install -y libasound2-dev   # cpal
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
-      - run: cargo test --workspace --release
+      # sweepeq-py is tested from Python (python.yml), where it is built as an extension
+      - run: cargo test --workspace --exclude sweepeq-py --release
+
+  miri:
+    # Undefined-behaviour check of the safe code and the dependencies' unsafe code (rtrb,
+    # realfft) on small cases. Miri does not run SIMD intrinsics; AddressSanitizer covers
+    # those below.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - run: cargo miri test -p sweepeq-core --lib --test miri_small
+
+  asan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo test -p sweepeq-core --target x86_64-unknown-linux-gnu
+        env:
+          RUSTFLAGS: -Zsanitizer=address
+          RUSTDOCFLAGS: -Zsanitizer=address
+
+  fuzz:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - run: tools/fuzz.sh 120
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: fuzz-crash
+          path: engine/crash-*

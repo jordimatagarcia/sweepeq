@@ -33,7 +33,7 @@ files = ["src", "tests"]
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["sounddevice", "scipy", "scipy.*", "matplotlib", "matplotlib.*"]
+module = ["sounddevice", "scipy", "scipy.*", "matplotlib", "matplotlib.*", "sweepeq_engine"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
