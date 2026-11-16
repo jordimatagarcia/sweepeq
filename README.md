@@ -22,7 +22,7 @@ uv run sweepeq measure --device 2 --out m.npz  # through a sound card
 ## Milestones
 
 1. ✅ Sweep measurement (synchronized exponential sweep, impulse response, harmonic distortion)
-2. Real measurements and analysis, validated against REW
+2. Real measurements and analysis, validated against REW (software done; [procedure](docs/validation.md))
 3. Correction filter design (regularised inversion, target curves, boost limits)
 4. Rust real-time engine
 5. Benchmarks and latency

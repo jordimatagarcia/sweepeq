@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
+from sweepeq.analysis import Curve
 from sweepeq.measure import CLIP_LEVEL, Measurement, Recorder, SimulatedRecorder, measure
 from sweepeq.plant import Plant, peaking_biquad
 from sweepeq.response import frequency_response, harmonic_distortion, hd_range, to_db
@@ -31,7 +32,23 @@ def main(argv: list[str] | None = None) -> int:
         if name == "measure":
             p.add_argument("--device", default=None, help="sound device (name or index)")
             p.add_argument("--channel", type=int, default=0, help="input channel (0-based)")
+    sub.add_parser("devices", help="list sound devices")
+    a = sub.add_parser("analyse", help="smooth, calibrate, average and compare measurements")
+    a.add_argument("measurements", type=Path, nargs="+", help="saved .npz measurements")
+    a.add_argument("--cal", type=Path, help="microphone calibration file")
+    a.add_argument("--smooth", type=float, default=6.0, help="1/N octave (0: none)")
+    a.add_argument("--compare", type=Path, help="REW text export to compare against")
+    a.add_argument("--range", type=float, nargs=2, default=(50.0, 10_000.0), metavar=("LO", "HI"))
+    a.add_argument("--export", type=Path, help="write the result as REW-importable text")
+    a.add_argument("--plot", type=Path, help="save a plot (needs the plot extra)")
     args = parser.parse_args(argv)
+    if args.command == "devices":
+        import sounddevice as sd
+
+        print(sd.query_devices())
+        return 0
+    if args.command == "analyse":
+        return _analyse(args)
 
     try:
         spec = SweepSpec(args.f1, args.f2, args.duration, args.fs, amplitude=args.level)
@@ -51,6 +68,69 @@ def main(argv: list[str] | None = None) -> int:
         m.save(args.out)
         print(f"saved {args.out}")
     return 0
+
+
+def _analyse(args: argparse.Namespace) -> int:
+    from sweepeq.analysis import (
+        apply_calibration,
+        average,
+        compare,
+        read_text_curve,
+        response_curve,
+        smooth,
+        write_text_curve,
+    )
+    from sweepeq.measure import load_linear
+
+    curves = []
+    for path in args.measurements:
+        hir, fs, f1, f2 = load_linear(path)
+        freqs = np.geomspace(f1, f2, 2000)
+        curves.append(response_curve(freqs, frequency_response(hir, freqs, fs)))
+    result = average(curves)
+    if args.cal is not None:
+        result = apply_calibration(result, read_text_curve(args.cal))
+    if args.smooth > 0:
+        result = smooth(result, args.smooth)
+    if args.export is not None:
+        write_text_curve(result, args.export)
+        print(f"wrote {args.export}")
+    reference = None
+    if args.compare is not None:
+        reference = read_text_curve(args.compare)
+        if args.smooth > 0:
+            reference = smooth(reference, args.smooth)
+        cmp = compare(result, reference, *args.range)
+        lo, hi = args.range
+        print(
+            f"vs {args.compare.name}, {lo:g}-{hi:g} Hz, both normalised at 1 kHz: "
+            f"max difference {cmp.max_abs_db:.2f} dB"
+        )
+    if args.plot is not None:
+        _plot(result, reference, args.plot)
+        print(f"saved {args.plot}")
+    return 0
+
+
+def _plot(result: Curve, reference: Curve | None, path: Path) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from sweepeq.analysis import normalise
+
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    r = normalise(result)
+    ax.semilogx(r.freqs, r.db, label="sweepeq")
+    if reference is not None:
+        ref = normalise(reference)
+        ax.semilogx(ref.freqs, ref.db, label="REW", linestyle="--")
+    ax.set(xlabel="Frequency (Hz)", ylabel="Level re 1 kHz (dB)", xlim=(20, 20_000))
+    ax.grid(True, which="both", alpha=0.3)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
 
 
 def _demo_plant(fs: int) -> Plant:

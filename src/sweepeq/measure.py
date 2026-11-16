@@ -86,6 +86,13 @@ class Measurement:
         np.savez_compressed(path, allow_pickle=False, **arrays)
 
 
+def load_linear(path: Path) -> tuple[HarmonicIr, int, float, float]:
+    """Linear impulse response, sample rate and sweep band of a saved measurement."""
+    with np.load(path, allow_pickle=False) as d:
+        hir = HarmonicIr(1, np.asarray(d["ir_1"], dtype=np.float64), float(d["offset_1"]))
+        return hir, int(d["fs"]), float(d["f1"]), float(d["f2"])
+
+
 CLIP_LEVEL = 0.99
 
 
