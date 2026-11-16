@@ -1,0 +1,1001 @@
+{
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13700H",
+  "arch": "x86_64",
+  "simd": "Avx2Fma",
+  "sample_rate": 48000,
+  "chunk": 256,
+  "quick": false,
+  "cases": [
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 16,
+      "ns_per_sample": 2.5949,
+      "realtime_factor": 8028.5,
+      "cpu_percent_per_channel": 0.0125,
+      "worst_call_us": 0.754,
+      "worst_call_deadline_fraction": 0.00014
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 16,
+      "ns_per_sample": 4.447,
+      "realtime_factor": 4684.8,
+      "cpu_percent_per_channel": 0.0213,
+      "worst_call_us": 1.168,
+      "worst_call_deadline_fraction": 0.00022
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 16,
+      "ns_per_sample": 5.6221,
+      "realtime_factor": 3705.6,
+      "cpu_percent_per_channel": 0.027,
+      "worst_call_us": 2.165,
+      "worst_call_deadline_fraction": 0.00041
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 16,
+      "ns_per_sample": 5.115,
+      "realtime_factor": 4073.0,
+      "cpu_percent_per_channel": 0.0246,
+      "worst_call_us": 1.361,
+      "worst_call_deadline_fraction": 0.00026
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 16,
+      "ns_per_sample": 4.8608,
+      "realtime_factor": 4286.0,
+      "cpu_percent_per_channel": 0.0233,
+      "worst_call_us": 1.263,
+      "worst_call_deadline_fraction": 0.00024
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 16,
+      "ns_per_sample": 4.8103,
+      "realtime_factor": 4331.0,
+      "cpu_percent_per_channel": 0.0231,
+      "worst_call_us": 1.246,
+      "worst_call_deadline_fraction": 0.00023
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 16,
+      "ns_per_sample": 4.8531,
+      "realtime_factor": 4292.8,
+      "cpu_percent_per_channel": 0.0233,
+      "worst_call_us": 2.472,
+      "worst_call_deadline_fraction": 0.00046
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 16,
+      "ns_per_sample": 5.3251,
+      "realtime_factor": 3912.3,
+      "cpu_percent_per_channel": 0.0256,
+      "worst_call_us": 5.345,
+      "worst_call_deadline_fraction": 0.001
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 16,
+      "ns_per_sample": 5.509,
+      "realtime_factor": 3781.7,
+      "cpu_percent_per_channel": 0.0264,
+      "worst_call_us": 11.809,
+      "worst_call_deadline_fraction": 0.00221
+    },
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 32,
+      "ns_per_sample": 2.7165,
+      "realtime_factor": 7669.2,
+      "cpu_percent_per_channel": 0.013,
+      "worst_call_us": 0.749,
+      "worst_call_deadline_fraction": 0.00014
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 32,
+      "ns_per_sample": 7.207,
+      "realtime_factor": 2890.7,
+      "cpu_percent_per_channel": 0.0346,
+      "worst_call_us": 1.97,
+      "worst_call_deadline_fraction": 0.00037
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 32,
+      "ns_per_sample": 5.3191,
+      "realtime_factor": 3916.7,
+      "cpu_percent_per_channel": 0.0255,
+      "worst_call_us": 1.447,
+      "worst_call_deadline_fraction": 0.00027
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 32,
+      "ns_per_sample": 4.9204,
+      "realtime_factor": 4234.1,
+      "cpu_percent_per_channel": 0.0236,
+      "worst_call_us": 1.316,
+      "worst_call_deadline_fraction": 0.00025
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 32,
+      "ns_per_sample": 4.8967,
+      "realtime_factor": 4254.6,
+      "cpu_percent_per_channel": 0.0235,
+      "worst_call_us": 1.283,
+      "worst_call_deadline_fraction": 0.00024
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 32,
+      "ns_per_sample": 4.8255,
+      "realtime_factor": 4317.3,
+      "cpu_percent_per_channel": 0.0232,
+      "worst_call_us": 1.276,
+      "worst_call_deadline_fraction": 0.00024
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 32,
+      "ns_per_sample": 4.8505,
+      "realtime_factor": 4295.1,
+      "cpu_percent_per_channel": 0.0233,
+      "worst_call_us": 2.475,
+      "worst_call_deadline_fraction": 0.00046
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 32,
+      "ns_per_sample": 5.4073,
+      "realtime_factor": 3852.8,
+      "cpu_percent_per_channel": 0.026,
+      "worst_call_us": 5.882,
+      "worst_call_deadline_fraction": 0.0011
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 32,
+      "ns_per_sample": 5.6734,
+      "realtime_factor": 3672.1,
+      "cpu_percent_per_channel": 0.0272,
+      "worst_call_us": 11.449,
+      "worst_call_deadline_fraction": 0.00215
+    },
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 64,
+      "ns_per_sample": 3.4304,
+      "realtime_factor": 6073.2,
+      "cpu_percent_per_channel": 0.0165,
+      "worst_call_us": 0.956,
+      "worst_call_deadline_fraction": 0.00018
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 64,
+      "ns_per_sample": 12.8194,
+      "realtime_factor": 1625.1,
+      "cpu_percent_per_channel": 0.0615,
+      "worst_call_us": 6.049,
+      "worst_call_deadline_fraction": 0.00113
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 64,
+      "ns_per_sample": 6.2463,
+      "realtime_factor": 3335.3,
+      "cpu_percent_per_channel": 0.03,
+      "worst_call_us": 1.732,
+      "worst_call_deadline_fraction": 0.00032
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 64,
+      "ns_per_sample": 5.1649,
+      "realtime_factor": 4033.6,
+      "cpu_percent_per_channel": 0.0248,
+      "worst_call_us": 1.365,
+      "worst_call_deadline_fraction": 0.00026
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 64,
+      "ns_per_sample": 4.8704,
+      "realtime_factor": 4277.5,
+      "cpu_percent_per_channel": 0.0234,
+      "worst_call_us": 1.265,
+      "worst_call_deadline_fraction": 0.00024
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 64,
+      "ns_per_sample": 5.3309,
+      "realtime_factor": 3908.0,
+      "cpu_percent_per_channel": 0.0256,
+      "worst_call_us": 1.406,
+      "worst_call_deadline_fraction": 0.00026
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 64,
+      "ns_per_sample": 4.9598,
+      "realtime_factor": 4200.4,
+      "cpu_percent_per_channel": 0.0238,
+      "worst_call_us": 3.553,
+      "worst_call_deadline_fraction": 0.00067
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 64,
+      "ns_per_sample": 5.3417,
+      "realtime_factor": 3900.1,
+      "cpu_percent_per_channel": 0.0256,
+      "worst_call_us": 5.422,
+      "worst_call_deadline_fraction": 0.00102
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 64,
+      "ns_per_sample": 5.558,
+      "realtime_factor": 3748.4,
+      "cpu_percent_per_channel": 0.0267,
+      "worst_call_us": 11.25,
+      "worst_call_deadline_fraction": 0.00211
+    },
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 128,
+      "ns_per_sample": 5.1251,
+      "realtime_factor": 4065.0,
+      "cpu_percent_per_channel": 0.0246,
+      "worst_call_us": 1.403,
+      "worst_call_deadline_fraction": 0.00026
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 128,
+      "ns_per_sample": 28.6892,
+      "realtime_factor": 726.2,
+      "cpu_percent_per_channel": 0.1377,
+      "worst_call_us": 11.83,
+      "worst_call_deadline_fraction": 0.00222
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 128,
+      "ns_per_sample": 8.214,
+      "realtime_factor": 2536.3,
+      "cpu_percent_per_channel": 0.0394,
+      "worst_call_us": 3.5,
+      "worst_call_deadline_fraction": 0.00066
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 128,
+      "ns_per_sample": 6.1783,
+      "realtime_factor": 3372.0,
+      "cpu_percent_per_channel": 0.0297,
+      "worst_call_us": 1.706,
+      "worst_call_deadline_fraction": 0.00032
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 128,
+      "ns_per_sample": 4.8562,
+      "realtime_factor": 4290.0,
+      "cpu_percent_per_channel": 0.0233,
+      "worst_call_us": 1.276,
+      "worst_call_deadline_fraction": 0.00024
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 128,
+      "ns_per_sample": 4.8405,
+      "realtime_factor": 4303.9,
+      "cpu_percent_per_channel": 0.0232,
+      "worst_call_us": 1.256,
+      "worst_call_deadline_fraction": 0.00024
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 128,
+      "ns_per_sample": 4.8396,
+      "realtime_factor": 4304.8,
+      "cpu_percent_per_channel": 0.0232,
+      "worst_call_us": 2.482,
+      "worst_call_deadline_fraction": 0.00047
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 128,
+      "ns_per_sample": 5.2346,
+      "realtime_factor": 3980.0,
+      "cpu_percent_per_channel": 0.0251,
+      "worst_call_us": 5.349,
+      "worst_call_deadline_fraction": 0.001
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 128,
+      "ns_per_sample": 5.6019,
+      "realtime_factor": 3719.0,
+      "cpu_percent_per_channel": 0.0269,
+      "worst_call_us": 11.839,
+      "worst_call_deadline_fraction": 0.00222
+    },
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 256,
+      "ns_per_sample": 9.1467,
+      "realtime_factor": 2277.7,
+      "cpu_percent_per_channel": 0.0439,
+      "worst_call_us": 4.618,
+      "worst_call_deadline_fraction": 0.00087
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 256,
+      "ns_per_sample": 51.0919,
+      "realtime_factor": 407.8,
+      "cpu_percent_per_channel": 0.2452,
+      "worst_call_us": 19.706,
+      "worst_call_deadline_fraction": 0.00369
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 256,
+      "ns_per_sample": 12.9237,
+      "realtime_factor": 1612.0,
+      "cpu_percent_per_channel": 0.062,
+      "worst_call_us": 7.017,
+      "worst_call_deadline_fraction": 0.00132
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 256,
+      "ns_per_sample": 8.0892,
+      "realtime_factor": 2575.5,
+      "cpu_percent_per_channel": 0.0388,
+      "worst_call_us": 3.144,
+      "worst_call_deadline_fraction": 0.00059
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 256,
+      "ns_per_sample": 5.8522,
+      "realtime_factor": 3559.9,
+      "cpu_percent_per_channel": 0.0281,
+      "worst_call_us": 1.549,
+      "worst_call_deadline_fraction": 0.00029
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 256,
+      "ns_per_sample": 4.7991,
+      "realtime_factor": 4341.1,
+      "cpu_percent_per_channel": 0.023,
+      "worst_call_us": 1.243,
+      "worst_call_deadline_fraction": 0.00023
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 256,
+      "ns_per_sample": 4.9041,
+      "realtime_factor": 4248.1,
+      "cpu_percent_per_channel": 0.0235,
+      "worst_call_us": 2.518,
+      "worst_call_deadline_fraction": 0.00047
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 256,
+      "ns_per_sample": 5.4161,
+      "realtime_factor": 3846.5,
+      "cpu_percent_per_channel": 0.026,
+      "worst_call_us": 5.427,
+      "worst_call_deadline_fraction": 0.00102
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 256,
+      "ns_per_sample": 5.5987,
+      "realtime_factor": 3721.1,
+      "cpu_percent_per_channel": 0.0269,
+      "worst_call_us": 11.295,
+      "worst_call_deadline_fraction": 0.00212
+    },
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 512,
+      "ns_per_sample": 17.4361,
+      "realtime_factor": 1194.8,
+      "cpu_percent_per_channel": 0.0837,
+      "worst_call_us": 7.254,
+      "worst_call_deadline_fraction": 0.00136
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 512,
+      "ns_per_sample": 92.0809,
+      "realtime_factor": 226.3,
+      "cpu_percent_per_channel": 0.442,
+      "worst_call_us": 30.499,
+      "worst_call_deadline_fraction": 0.00572
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 512,
+      "ns_per_sample": 20.8845,
+      "realtime_factor": 997.6,
+      "cpu_percent_per_channel": 0.1002,
+      "worst_call_us": 9.923,
+      "worst_call_deadline_fraction": 0.00186
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 512,
+      "ns_per_sample": 11.95,
+      "realtime_factor": 1743.4,
+      "cpu_percent_per_channel": 0.0574,
+      "worst_call_us": 5.939,
+      "worst_call_deadline_fraction": 0.00111
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 512,
+      "ns_per_sample": 7.9286,
+      "realtime_factor": 2627.6,
+      "cpu_percent_per_channel": 0.0381,
+      "worst_call_us": 3.108,
+      "worst_call_deadline_fraction": 0.00058
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 512,
+      "ns_per_sample": 5.8629,
+      "realtime_factor": 3553.4,
+      "cpu_percent_per_channel": 0.0281,
+      "worst_call_us": 1.535,
+      "worst_call_deadline_fraction": 0.00029
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 512,
+      "ns_per_sample": 4.8958,
+      "realtime_factor": 4255.4,
+      "cpu_percent_per_channel": 0.0235,
+      "worst_call_us": 2.491,
+      "worst_call_deadline_fraction": 0.00047
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 512,
+      "ns_per_sample": 5.3254,
+      "realtime_factor": 3912.1,
+      "cpu_percent_per_channel": 0.0256,
+      "worst_call_us": 5.338,
+      "worst_call_deadline_fraction": 0.001
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 512,
+      "ns_per_sample": 5.596,
+      "realtime_factor": 3722.9,
+      "cpu_percent_per_channel": 0.0269,
+      "worst_call_us": 11.286,
+      "worst_call_deadline_fraction": 0.00212
+    },
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 1024,
+      "ns_per_sample": 27.3774,
+      "realtime_factor": 761.0,
+      "cpu_percent_per_channel": 0.1314,
+      "worst_call_us": 11.429,
+      "worst_call_deadline_fraction": 0.00214
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 1024,
+      "ns_per_sample": 178.6849,
+      "realtime_factor": 116.6,
+      "cpu_percent_per_channel": 0.8577,
+      "worst_call_us": 54.309,
+      "worst_call_deadline_fraction": 0.01018
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 1024,
+      "ns_per_sample": 37.1121,
+      "realtime_factor": 561.4,
+      "cpu_percent_per_channel": 0.1781,
+      "worst_call_us": 16.061,
+      "worst_call_deadline_fraction": 0.00301
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 1024,
+      "ns_per_sample": 20.2618,
+      "realtime_factor": 1028.2,
+      "cpu_percent_per_channel": 0.0973,
+      "worst_call_us": 9.571,
+      "worst_call_deadline_fraction": 0.00179
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 1024,
+      "ns_per_sample": 11.84,
+      "realtime_factor": 1759.6,
+      "cpu_percent_per_channel": 0.0568,
+      "worst_call_us": 5.716,
+      "worst_call_deadline_fraction": 0.00107
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 1024,
+      "ns_per_sample": 7.9058,
+      "realtime_factor": 2635.2,
+      "cpu_percent_per_channel": 0.0379,
+      "worst_call_us": 2.809,
+      "worst_call_deadline_fraction": 0.00053
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 1024,
+      "ns_per_sample": 5.8918,
+      "realtime_factor": 3536.0,
+      "cpu_percent_per_channel": 0.0283,
+      "worst_call_us": 3.032,
+      "worst_call_deadline_fraction": 0.00057
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 1024,
+      "ns_per_sample": 5.2118,
+      "realtime_factor": 3997.3,
+      "cpu_percent_per_channel": 0.025,
+      "worst_call_us": 5.289,
+      "worst_call_deadline_fraction": 0.00099
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 1024,
+      "ns_per_sample": 5.5544,
+      "realtime_factor": 3750.8,
+      "cpu_percent_per_channel": 0.0267,
+      "worst_call_us": 11.845,
+      "worst_call_deadline_fraction": 0.00222
+    },
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 2048,
+      "ns_per_sample": 67.8164,
+      "realtime_factor": 307.2,
+      "cpu_percent_per_channel": 0.3255,
+      "worst_call_us": 22.146,
+      "worst_call_deadline_fraction": 0.00415
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 2048,
+      "ns_per_sample": 347.5741,
+      "realtime_factor": 59.9,
+      "cpu_percent_per_channel": 1.6684,
+      "worst_call_us": 101.071,
+      "worst_call_deadline_fraction": 0.01895
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 2048,
+      "ns_per_sample": 69.7134,
+      "realtime_factor": 298.8,
+      "cpu_percent_per_channel": 0.3346,
+      "worst_call_us": 26.702,
+      "worst_call_deadline_fraction": 0.00501
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 2048,
+      "ns_per_sample": 34.8265,
+      "realtime_factor": 598.2,
+      "cpu_percent_per_channel": 0.1672,
+      "worst_call_us": 14.525,
+      "worst_call_deadline_fraction": 0.00272
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 2048,
+      "ns_per_sample": 19.2838,
+      "realtime_factor": 1080.4,
+      "cpu_percent_per_channel": 0.0926,
+      "worst_call_us": 8.981,
+      "worst_call_deadline_fraction": 0.00168
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 2048,
+      "ns_per_sample": 11.447,
+      "realtime_factor": 1820.0,
+      "cpu_percent_per_channel": 0.0549,
+      "worst_call_us": 5.486,
+      "worst_call_deadline_fraction": 0.00103
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 2048,
+      "ns_per_sample": 7.7169,
+      "realtime_factor": 2699.7,
+      "cpu_percent_per_channel": 0.037,
+      "worst_call_us": 4.998,
+      "worst_call_deadline_fraction": 0.00094
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 2048,
+      "ns_per_sample": 6.3604,
+      "realtime_factor": 3275.5,
+      "cpu_percent_per_channel": 0.0305,
+      "worst_call_us": 8.639,
+      "worst_call_deadline_fraction": 0.00162
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 2048,
+      "ns_per_sample": 5.5315,
+      "realtime_factor": 3766.3,
+      "cpu_percent_per_channel": 0.0266,
+      "worst_call_us": 11.825,
+      "worst_call_deadline_fraction": 0.00222
+    },
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 4096,
+      "ns_per_sample": 107.9195,
+      "realtime_factor": 193.0,
+      "cpu_percent_per_channel": 0.518,
+      "worst_call_us": 34.131,
+      "worst_call_deadline_fraction": 0.0064
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 4096,
+      "ns_per_sample": 681.3807,
+      "realtime_factor": 30.6,
+      "cpu_percent_per_channel": 3.2706,
+      "worst_call_us": 190.983,
+      "worst_call_deadline_fraction": 0.03581
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 4096,
+      "ns_per_sample": 133.7841,
+      "realtime_factor": 155.7,
+      "cpu_percent_per_channel": 0.6422,
+      "worst_call_us": 44.295,
+      "worst_call_deadline_fraction": 0.00831
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 4096,
+      "ns_per_sample": 66.4039,
+      "realtime_factor": 313.7,
+      "cpu_percent_per_channel": 0.3187,
+      "worst_call_us": 25.59,
+      "worst_call_deadline_fraction": 0.0048
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 4096,
+      "ns_per_sample": 34.4378,
+      "realtime_factor": 605.0,
+      "cpu_percent_per_channel": 0.1653,
+      "worst_call_us": 14.799,
+      "worst_call_deadline_fraction": 0.00277
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 4096,
+      "ns_per_sample": 19.0542,
+      "realtime_factor": 1093.4,
+      "cpu_percent_per_channel": 0.0915,
+      "worst_call_us": 8.544,
+      "worst_call_deadline_fraction": 0.0016
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 4096,
+      "ns_per_sample": 11.5692,
+      "realtime_factor": 1800.8,
+      "cpu_percent_per_channel": 0.0555,
+      "worst_call_us": 8.842,
+      "worst_call_deadline_fraction": 0.00166
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 4096,
+      "ns_per_sample": 8.0903,
+      "realtime_factor": 2575.1,
+      "cpu_percent_per_channel": 0.0388,
+      "worst_call_us": 9.307,
+      "worst_call_deadline_fraction": 0.00175
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 4096,
+      "ns_per_sample": 6.509,
+      "realtime_factor": 3200.7,
+      "cpu_percent_per_channel": 0.0312,
+      "worst_call_us": 13.674,
+      "worst_call_deadline_fraction": 0.00256
+    },
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 8192,
+      "ns_per_sample": 567.8237,
+      "realtime_factor": 36.7,
+      "cpu_percent_per_channel": 2.7256,
+      "worst_call_us": 169.789,
+      "worst_call_deadline_fraction": 0.03184
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 8192,
+      "ns_per_sample": 1616.1483,
+      "realtime_factor": 12.9,
+      "cpu_percent_per_channel": 7.7575,
+      "worst_call_us": 721.356,
+      "worst_call_deadline_fraction": 0.13525
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 8192,
+      "ns_per_sample": 268.8116,
+      "realtime_factor": 77.5,
+      "cpu_percent_per_channel": 1.2903,
+      "worst_call_us": 85.206,
+      "worst_call_deadline_fraction": 0.01598
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 8192,
+      "ns_per_sample": 129.8158,
+      "realtime_factor": 160.5,
+      "cpu_percent_per_channel": 0.6231,
+      "worst_call_us": 44.123,
+      "worst_call_deadline_fraction": 0.00827
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 8192,
+      "ns_per_sample": 64.8797,
+      "realtime_factor": 321.1,
+      "cpu_percent_per_channel": 0.3114,
+      "worst_call_us": 24.09,
+      "worst_call_deadline_fraction": 0.00452
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 8192,
+      "ns_per_sample": 33.9844,
+      "realtime_factor": 613.0,
+      "cpu_percent_per_channel": 0.1631,
+      "worst_call_us": 14.23,
+      "worst_call_deadline_fraction": 0.00267
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 8192,
+      "ns_per_sample": 18.9103,
+      "realtime_factor": 1101.7,
+      "cpu_percent_per_channel": 0.0908,
+      "worst_call_us": 14.564,
+      "worst_call_deadline_fraction": 0.00273
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 8192,
+      "ns_per_sample": 11.723,
+      "realtime_factor": 1777.1,
+      "cpu_percent_per_channel": 0.0563,
+      "worst_call_us": 15.751,
+      "worst_call_deadline_fraction": 0.00295
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 8192,
+      "ns_per_sample": 8.1383,
+      "realtime_factor": 2559.9,
+      "cpu_percent_per_channel": 0.0391,
+      "worst_call_us": 17.794,
+      "worst_call_deadline_fraction": 0.00334
+    },
+    {
+      "method": "direct-Avx2Fma",
+      "block": 0,
+      "taps": 16384,
+      "ns_per_sample": 1128.2407,
+      "realtime_factor": 18.5,
+      "cpu_percent_per_channel": 5.4156,
+      "worst_call_us": 332.496,
+      "worst_call_deadline_fraction": 0.06234
+    },
+    {
+      "method": "direct-Scalar",
+      "block": 0,
+      "taps": 16384,
+      "ns_per_sample": 2721.7703,
+      "realtime_factor": 7.7,
+      "cpu_percent_per_channel": 13.0645,
+      "worst_call_us": 776.121,
+      "worst_call_deadline_fraction": 0.14552
+    },
+    {
+      "method": "partitioned",
+      "block": 32,
+      "taps": 16384,
+      "ns_per_sample": 523.8089,
+      "realtime_factor": 39.8,
+      "cpu_percent_per_channel": 2.5143,
+      "worst_call_us": 162.862,
+      "worst_call_deadline_fraction": 0.03054
+    },
+    {
+      "method": "partitioned",
+      "block": 64,
+      "taps": 16384,
+      "ns_per_sample": 251.5182,
+      "realtime_factor": 82.8,
+      "cpu_percent_per_channel": 1.2073,
+      "worst_call_us": 77.589,
+      "worst_call_deadline_fraction": 0.01455
+    },
+    {
+      "method": "partitioned",
+      "block": 128,
+      "taps": 16384,
+      "ns_per_sample": 124.7512,
+      "realtime_factor": 167.0,
+      "cpu_percent_per_channel": 0.5988,
+      "worst_call_us": 41.058,
+      "worst_call_deadline_fraction": 0.0077
+    },
+    {
+      "method": "partitioned",
+      "block": 256,
+      "taps": 16384,
+      "ns_per_sample": 63.8601,
+      "realtime_factor": 326.2,
+      "cpu_percent_per_channel": 0.3065,
+      "worst_call_us": 23.691,
+      "worst_call_deadline_fraction": 0.00444
+    },
+    {
+      "method": "partitioned",
+      "block": 512,
+      "taps": 16384,
+      "ns_per_sample": 33.5993,
+      "realtime_factor": 620.1,
+      "cpu_percent_per_channel": 0.1613,
+      "worst_call_us": 23.603,
+      "worst_call_deadline_fraction": 0.00443
+    },
+    {
+      "method": "partitioned",
+      "block": 1024,
+      "taps": 16384,
+      "ns_per_sample": 19.2005,
+      "realtime_factor": 1085.0,
+      "cpu_percent_per_channel": 0.0922,
+      "worst_call_us": 24.638,
+      "worst_call_deadline_fraction": 0.00462
+    },
+    {
+      "method": "partitioned",
+      "block": 2048,
+      "taps": 16384,
+      "ns_per_sample": 11.7525,
+      "realtime_factor": 1772.7,
+      "cpu_percent_per_channel": 0.0564,
+      "worst_call_us": 26.915,
+      "worst_call_deadline_fraction": 0.00505
+    }
+  ],
+  "pinned_core": "0"
+}

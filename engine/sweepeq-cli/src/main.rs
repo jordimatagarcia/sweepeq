@@ -1,6 +1,7 @@
 //! `sweepeq-engine`: apply an FIR correction filter (a WAV file of taps, as written by
 //! `sweepeq design --fir`) to a WAV file, or to live audio.
 
+mod bench;
 mod frames;
 
 use std::path::{Path, PathBuf};
@@ -38,6 +39,21 @@ enum Command {
         /// Partition size (partitioned method).
         #[arg(long, default_value_t = 256)]
         block: usize,
+    },
+    /// Time every convolution method over filter lengths and block sizes; JSON on stdout
+    /// (or --out), progress on stderr.
+    Bench {
+        /// A short run (3 filter lengths, 2 block sizes), e.g. for CI.
+        #[arg(long)]
+        quick: bool,
+        /// Samples per call, as an audio callback would pass them.
+        #[arg(long, default_value_t = 256)]
+        chunk: usize,
+        /// Minimum time per case (s).
+        #[arg(long, default_value_t = 0.3)]
+        min_time: f64,
+        #[arg(long)]
+        out: Option<PathBuf>,
     },
     /// Show a filter's length, gain and peak.
     Info {
@@ -366,6 +382,28 @@ fn main() -> Result<()> {
             block,
         } => process(&filter, &input, &output, method(m, block)),
         Command::Info { filter } => info(&filter),
+        Command::Bench {
+            quick,
+            chunk,
+            min_time,
+            out,
+        } => {
+            ensure!(chunk > 0, "chunk must be positive");
+            let json = bench::run(&bench::Options {
+                quick,
+                chunk,
+                min_time: Duration::from_secs_f64(min_time.max(0.0)),
+            })?;
+            match out {
+                Some(p) => {
+                    std::fs::write(&p, json).with_context(|| format!("writing {}", p.display()))
+                }
+                None => {
+                    print!("{json}");
+                    Ok(())
+                }
+            }
+        }
         Command::Live {
             filter,
             method: m,

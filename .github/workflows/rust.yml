@@ -25,6 +25,12 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       # sweepeq-py is tested from Python (python.yml), where it is built as an extension
       - run: cargo test --workspace --exclude sweepeq-py --release
+      # smoke run of the benchmark (timings on shared runners are not compared)
+      - run: cargo run --quiet --release -p sweepeq-cli -- bench --quick --min-time 0.05 --out bench.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench-ci
+          path: engine/bench.json
 
   miri:
     # Undefined-behaviour check of the safe code and the dependencies' unsafe code (rtrb,

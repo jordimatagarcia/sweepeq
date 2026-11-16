@@ -3,7 +3,7 @@
 Measure a loudspeaker's or headphone's frequency response, design a correction filter, and
 run it in real time in Rust, with every step checked against an independent reference.
 
-**Status:** M1 (measurement), M3 (filter design) and M4 (real-time engine) done; M2 waits on a measurement microphone. See the milestones below and
+**Status:** M1 (measurement), M3 (filter design), M4 (real-time engine) and M5 (benchmarks) done; M2 waits on a measurement microphone. See the milestones below and
 [docs/measurement.md](docs/measurement.md).
 
 ```bash
@@ -28,7 +28,7 @@ engine/target/release/sweepeq-engine process --filter eq.wav --input in.wav --ou
 2. Real measurements and analysis, validated against REW (software done; [procedure](docs/validation.md))
 3. ✅ Correction filter design (regularised inversion, boost limit, FIR and parametric EQ; [docs](docs/design.md))
 4. ✅ Rust real-time engine (SIMD FIR, partitioned FFT convolution, lock-free filter swap; [docs](docs/engine.md))
-5. Benchmarks and latency
+5. ✅ Benchmarks and latency (crossover at 128–256 taps; a 4096-tap correction under 1% of a core; [docs](docs/benchmarks.md))
 6. Release
 
 Every algorithm is implemented from the published sources listed in
