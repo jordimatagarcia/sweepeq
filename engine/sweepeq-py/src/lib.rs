@@ -7,12 +7,17 @@
 //! c.latency                 # samples
 //! ```
 
-use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1};
+use numpy::{AllowTypeChange, IntoPyArray, PyArray1, PyArrayLike1};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
 use sweepeq_core::{Convolver, Method, build};
+
+/// Any 1-D real array-like (float64, lists, strided views) as contiguous f32 samples.
+fn to_vec(a: &PyArrayLike1<'_, f32, AllowTypeChange>) -> Vec<f32> {
+    a.as_array().iter().copied().collect()
+}
 
 /// A streaming convolver running in Rust.
 #[pyclass(name = "Convolver")]
@@ -34,8 +39,13 @@ impl PyConvolver {
 impl PyConvolver {
     #[new]
     #[pyo3(signature = (taps, method = "partitioned", block = 256))]
-    fn new(taps: PyReadonlyArray1<'_, f32>, method: &str, block: usize) -> PyResult<Self> {
-        let taps = taps.as_slice()?;
+    fn new(
+        taps: PyArrayLike1<'_, f32, AllowTypeChange>,
+        method: &str,
+        block: usize,
+    ) -> PyResult<Self> {
+        let taps = to_vec(&taps);
+        let taps = taps.as_slice();
         if taps.is_empty() {
             return Err(PyValueError::new_err("taps must not be empty"));
         }
@@ -55,13 +65,14 @@ impl PyConvolver {
         })
     }
 
-    /// Filter a block of float32 samples; returns a new array of the same length.
+    /// Filter a block of samples (any real 1-D array-like; converted to float32); returns a
+    /// new float32 array of the same length.
     fn process<'py>(
         &self,
         py: Python<'py>,
-        x: PyReadonlyArray1<'py, f32>,
+        x: PyArrayLike1<'py, f32, AllowTypeChange>,
     ) -> PyResult<Bound<'py, PyArray1<f32>>> {
-        let input = x.as_slice()?.to_vec();
+        let input = to_vec(&x);
         let mut out = vec![0.0f32; input.len()];
         // the GIL is released while Rust runs
         py.detach(|| self.with(|c| c.process(&input, &mut out)));

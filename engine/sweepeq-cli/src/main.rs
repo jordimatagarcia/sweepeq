@@ -1,6 +1,8 @@
 //! `sweepeq-engine`: apply an FIR correction filter (a WAV file of taps, as written by
 //! `sweepeq design --fir`) to a WAV file, or to live audio.
 
+mod frames;
+
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant, SystemTime};
 
@@ -271,29 +273,29 @@ fn live(
     let in_stream = in_dev.build_input_stream(
         &in_cfg,
         move |data: &[f32], _| {
-            for frame in data.chunks(in_ch) {
-                for &v in &frame[..channels] {
-                    let _ = tx.push(v); // a full ring drops input rather than blocking
-                }
-            }
+            // a full ring drops whole frames rather than blocking
+            frames::push_frames(&mut tx, data, in_ch, channels);
         },
         |e| eprintln!("input error: {e}"),
         None,
     )?;
     let mut x = vec![vec![0.0f32; MAX_BLOCK]; channels];
+    let mut frame = vec![0.0f32; channels];
     let mut y = vec![vec![0.0f32; MAX_BLOCK]; channels];
     let out_stream = out_dev.build_output_stream(
         &out_cfg,
         move |data: &mut [f32], _| {
             for chunk in data.chunks_mut(MAX_BLOCK * out_ch) {
-                let frames = chunk.len() / out_ch;
-                for i in 0..frames {
-                    for xc in x.iter_mut() {
-                        xc[i] = rx.pop().unwrap_or(0.0); // underrun: silence
+                let n_frames = chunk.len() / out_ch;
+                for i in 0..n_frames {
+                    // underrun: a frame of silence, never part of one
+                    frames::pop_frame(&mut rx, &mut frame);
+                    for (xc, &v) in x.iter_mut().zip(&frame) {
+                        xc[i] = v;
                     }
                 }
                 for ((e, xc), yc) in engines.iter_mut().zip(&x).zip(y.iter_mut()) {
-                    e.process(&xc[..frames], &mut yc[..frames]);
+                    e.process(&xc[..n_frames], &mut yc[..n_frames]);
                 }
                 for (i, frame) in chunk.chunks_mut(out_ch).enumerate() {
                     for (k, s) in frame.iter_mut().enumerate() {

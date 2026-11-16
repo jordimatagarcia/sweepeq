@@ -66,3 +66,20 @@ def test_invalid_arguments(kwargs: dict[str, Any], message: str) -> None:
         sweepeq_engine.Convolver(np.ones(4, np.float32), **kwargs)
     with pytest.raises(ValueError, match="empty"):
         sweepeq_engine.Convolver(np.zeros(0, np.float32))
+
+
+def test_accepts_common_array_types() -> None:
+    # Review fix: float64 (NumPy's default, and what sweepeq.design returns), lists and
+    # strided views were rejected with an unhelpful TypeError.
+    h64 = hd600_taps().astype(np.float64)
+    c = sweepeq_engine.Convolver(h64, method="direct")
+    x = np.random.default_rng(1).uniform(-0.5, 0.5, 4000)
+    y = c.process(x)
+    assert y.dtype == np.float32 and len(y) == len(x)
+    ref = signal.lfilter(h64.astype(np.float32).astype(np.float64), [1.0], x.astype(np.float32))
+    assert rel_error(y, ref, h64, x) < 5e-7
+    c.reset()
+    np.testing.assert_array_equal(c.process(x.tolist()), y)
+    wide = np.repeat(x.astype(np.float32), 2)
+    c.reset()
+    np.testing.assert_array_equal(c.process(wide[::2]), y)

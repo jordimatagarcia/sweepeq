@@ -1,24 +1,28 @@
 //! The real-time rule: once built, `process` never allocates or frees memory, including
-//! while swapping filters. Checked with a global allocator that counts calls made while a
-//! thread-local flag is set.
+//! while swapping filters. Checked with a global allocator that counts the calls made on
+//! the watching thread while it watches. Both the flag and the count are thread-local:
+//! tests run in parallel, and a shared count picked up another test's allocations (this
+//! failed on 2-core CI runners while passing locally).
 
 mod common;
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use common::{filter, noise};
 use sweepeq_core::{Convolver, DirectFir, Partitioned, engine};
 
 struct Counting;
 
-static CALLS: AtomicUsize = AtomicUsize::new(0);
-thread_local! { static WATCH: Cell<bool> = const { Cell::new(false) }; }
+thread_local! {
+    static WATCH: Cell<bool> = const { Cell::new(false) };
+    static CALLS: Cell<usize> = const { Cell::new(0) };
+}
 
 fn note() {
-    if WATCH.with(Cell::get) {
-        CALLS.fetch_add(1, Ordering::SeqCst);
+    // try_with: the allocator can be called while a thread's locals are being torn down
+    if WATCH.try_with(Cell::get).unwrap_or(false) {
+        let _ = CALLS.try_with(|c| c.set(c.get() + 1));
     }
 }
 
@@ -44,11 +48,11 @@ unsafe impl GlobalAlloc for Counting {
 static ALLOC: Counting = Counting;
 
 fn watched<F: FnOnce()>(f: F) -> usize {
-    CALLS.store(0, Ordering::SeqCst);
+    CALLS.with(|c| c.set(0));
     WATCH.with(|w| w.set(true));
     f();
     WATCH.with(|w| w.set(false));
-    CALLS.load(Ordering::SeqCst)
+    CALLS.with(Cell::get)
 }
 
 #[test]
@@ -97,4 +101,24 @@ fn the_counter_sees_allocations() {
     // guards the tests above against a counter that never counts
     let n = watched(|| drop(std::hint::black_box(vec![1u8; 16])));
     assert_eq!(n, 2);
+}
+
+#[test]
+fn the_counter_ignores_other_threads() {
+    // the regression: allocations on another thread must not count here
+    let n = watched(|| {
+        std::thread::spawn(|| {
+            for _ in 0..100 {
+                drop(std::hint::black_box(vec![1u8; 16]));
+            }
+        })
+        .join()
+        .unwrap();
+    });
+    // spawning and joining allocate on this thread a few times; the other thread's 200
+    // allocations must not show up
+    assert!(
+        n < 50,
+        "counted {n}: allocations from another thread leaked in"
+    );
 }

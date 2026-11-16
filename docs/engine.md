@@ -96,6 +96,23 @@ from a real headphone measurement: direct FIR (AVX2+FMA) 82× real time, partiti
 (B = 256) 485× real time. M5 measures this properly: the crossover between the methods
 over filter length and block size, latency, CPU load per channel, and x86 against ARM.
 
+## Review fixes
+
+A review after M4 (and its first CI run) found three problems, each now covered by tests:
+
+- **The allocation test could fail spuriously.** Its counter was a global shared by all
+  test threads, so on 2-core CI runners another test's deliberate allocations (the
+  counter's own guard test) landed in its window: "allocated 2 times". Locally, with 20
+  cores, the timing never overlapped. The count is now thread-local, with a test that
+  allocations on another thread are not counted. The engine itself never allocated.
+- **Live mode could swap the stereo channels for good.** Samples crossed from the input to
+  the output callback one at a time, so a full ring or an underrun in the middle of a
+  frame moved every later sample by one position. Whole frames now move or none do
+  (`sweepeq-cli/src/frames.rs`, unit-tested without audio devices).
+- **The Python bindings rejected NumPy's default float64 arrays** (what `sweepeq.design`
+  returns), lists and strided views, with an unhelpful TypeError. Any real 1-D array-like
+  is now converted to float32.
+
 ## Not yet verified
 
 - **`live`** compiles and shares all its processing with the tested code, but has not been
