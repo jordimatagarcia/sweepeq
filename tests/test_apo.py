@@ -5,7 +5,7 @@ import pytest
 from scipy import signal
 
 from sweepeq.apo import parse_apo
-from sweepeq.plant import peaking_biquad, shelf_biquad
+from sweepeq.simulated import peaking_biquad, shelf_biquad
 
 FS = 48_000
 

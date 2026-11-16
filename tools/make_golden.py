@@ -17,7 +17,7 @@ from scipy import signal
 from sweepeq.analysis import Curve
 from sweepeq.autoeq import read_autoeq_csv
 from sweepeq.design import DesignSpec, correction_db, design_fir
-from sweepeq.plant import Plant, peaking_biquad
+from sweepeq.simulated import SimulatedDevice, peaking_biquad
 from sweepeq.sweep import SweepSpec, synchronized_sweep
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,7 +36,7 @@ def device_correction(n_taps: int, phase: str) -> np.ndarray:
             peaking_biquad(8000.0, 5.0, 1.5, FS),
         ]
     )
-    measured = Curve(f, 20 * np.log10(np.abs(Plant(fs=FS, sos=sos).linear_response(f))))
+    measured = Curve(f, 20 * np.log10(np.abs(SimulatedDevice(fs=FS, sos=sos).linear_response(f))))
     spec = DesignSpec(f_lo=40.0, smoothing=0, n_taps=n_taps, phase=phase)  # type: ignore[arg-type]
     return design_fir(correction_db(measured, Curve(f, np.zeros_like(f)), spec), spec).taps
 

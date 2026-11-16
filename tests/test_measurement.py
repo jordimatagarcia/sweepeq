@@ -9,8 +9,8 @@ import pytest
 
 from sweepeq.deconv import HarmonicIr, band_weight, deconvolve, minimum_phase, separate
 from sweepeq.measure import SimulatedRecorder, measure
-from sweepeq.plant import Plant, peaking_biquad
 from sweepeq.response import delay_s, frequency_response, harmonic_distortion, hd_range, to_db
+from sweepeq.simulated import SimulatedDevice, peaking_biquad
 from sweepeq.sweep import SweepSpec, synchronized_sweep
 
 FS = 48_000
@@ -18,7 +18,7 @@ SPEC = SweepSpec(duration_s=3.0, fs=FS)
 PASSBAND = np.geomspace(2 * SPEC.f1, SPEC.f2 / 2, 400)
 
 
-def eq_plant(**kw: object) -> Plant:
+def eq_device(**kw: object) -> SimulatedDevice:
     sos = np.vstack(
         [
             peaking_biquad(100.0, 6.0, 1.0, FS),
@@ -26,16 +26,16 @@ def eq_plant(**kw: object) -> Plant:
             peaking_biquad(10_000.0, 4.0, 0.7, FS),
         ]
     )
-    return Plant(fs=FS, sos=sos, **kw)  # type: ignore[arg-type]
+    return SimulatedDevice(fs=FS, sos=sos, **kw)  # type: ignore[arg-type]
 
 
-def linear_ir(plant: Plant, seed: int = 0) -> HarmonicIr:
-    return measure(SPEC, SimulatedRecorder(plant, seed)).linear
+def linear_ir(dut: SimulatedDevice, seed: int = 0) -> HarmonicIr:
+    return measure(SPEC, SimulatedRecorder(dut, seed)).linear
 
 
 @pytest.fixture(scope="module")
 def loopback() -> HarmonicIr:
-    return linear_ir(Plant(fs=FS))
+    return linear_ir(SimulatedDevice(fs=FS))
 
 
 # --- sweep ------------------------------------------------------------------------------
@@ -75,26 +75,26 @@ def test_invalid_sweeps_are_rejected(kwargs: dict[str, float]) -> None:
 
 
 def test_flat_system_is_flat() -> None:
-    err = to_db(frequency_response(linear_ir(Plant(fs=FS)), PASSBAND, FS))
+    err = to_db(frequency_response(linear_ir(SimulatedDevice(fs=FS)), PASSBAND, FS))
     assert np.max(np.abs(err)) < 0.01
 
 
 @pytest.mark.parametrize("delay", [0, 123, 4800])
 def test_eq_magnitude_within_0_1_db(delay: int) -> None:
-    plant = eq_plant(delay_samples=delay, noise_rms=1e-4, gain=0.7)
-    ir = linear_ir(plant)
-    err = to_db(frequency_response(ir, PASSBAND, FS)) - to_db(plant.linear_response(PASSBAND))
+    dut = eq_device(delay_samples=delay, noise_rms=1e-4, gain=0.7)
+    ir = linear_ir(dut)
+    err = to_db(frequency_response(ir, PASSBAND, FS)) - to_db(dut.linear_response(PASSBAND))
     assert np.max(np.abs(err)) < 0.1
 
 
 @pytest.mark.parametrize("delay", [0, 1, 123, 4800])
 def test_delay_to_the_sample(delay: int, loopback: HarmonicIr) -> None:
-    measured = delay_s(linear_ir(Plant(fs=FS, delay_samples=delay)), FS, loopback) * FS
+    measured = delay_s(linear_ir(SimulatedDevice(fs=FS, delay_samples=delay)), FS, loopback) * FS
     assert measured == pytest.approx(delay, abs=0.01)
     # With a filter the peak also moves by the filter's own group delay, so the delay is
     # checked relative to the same filter measured without it.
-    eq0 = linear_ir(eq_plant())
-    with_eq = delay_s(linear_ir(eq_plant(delay_samples=delay, noise_rms=1e-4)), FS, eq0) * FS
+    eq0 = linear_ir(eq_device())
+    with_eq = delay_s(linear_ir(eq_device(delay_samples=delay, noise_rms=1e-4)), FS, eq0) * FS
     assert with_eq == pytest.approx(delay, abs=0.01)
 
 
@@ -103,8 +103,8 @@ def test_delay_to_the_sample(delay: int, loopback: HarmonicIr) -> None:
 
 @pytest.mark.parametrize(("a2", "a3"), [(0.1, 0.0), (0.0, 0.05), (0.1, 0.05), (0.02, 0.01)])
 def test_harmonic_levels_within_1_db(a2: float, a3: float) -> None:
-    plant = Plant(fs=FS, poly=(a2, a3), noise_rms=1e-5)
-    m = measure(SPEC, SimulatedRecorder(plant))
+    dut = SimulatedDevice(fs=FS, poly=(a2, a3), noise_rms=1e-5)
+    m = measure(SPEC, SimulatedRecorder(dut))
     a = SPEC.amplitude
     fundamental = a + 0.75 * a3 * a**3
     expected = {2: a2 * a**2 / 2 / fundamental, 3: a3 * a**3 / 4 / fundamental}
@@ -117,7 +117,7 @@ def test_harmonic_levels_within_1_db(a2: float, a3: float) -> None:
 
 
 def test_linear_system_has_no_harmonics() -> None:
-    m = measure(SPEC, SimulatedRecorder(eq_plant(noise_rms=1e-6)))
+    m = measure(SPEC, SimulatedRecorder(eq_device(noise_rms=1e-6)))
     f = np.geomspace(*hd_range(SPEC.f1, SPEC.f2, 2), 60)
     hd = to_db(harmonic_distortion(m.linear, m.harmonics[1], f, FS))
     assert np.max(hd) < -80.0
@@ -158,8 +158,12 @@ def test_save_and_cli(tmp_path) -> None:  # type: ignore[no-untyped-def]
 
 
 def test_latency_and_peak_to_noise() -> None:
-    quiet = measure(SPEC, SimulatedRecorder(Plant(fs=FS, delay_samples=480, noise_rms=1e-5)))
+    quiet = measure(
+        SPEC, SimulatedRecorder(SimulatedDevice(fs=FS, delay_samples=480, noise_rms=1e-5))
+    )
     assert quiet.latency_s * 1e3 == pytest.approx(10.0, abs=0.2)
-    noisy = measure(SPEC, SimulatedRecorder(Plant(fs=FS, delay_samples=480, noise_rms=1e-2)))
+    noisy = measure(
+        SPEC, SimulatedRecorder(SimulatedDevice(fs=FS, delay_samples=480, noise_rms=1e-2))
+    )
     assert quiet.peak_to_noise_db > 60.0
     assert noisy.peak_to_noise_db < quiet.peak_to_noise_db - 50.0

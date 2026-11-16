@@ -1,7 +1,7 @@
 """Measurement sessions: play a sweep, record the response, compute impulse responses.
 
 The audio I/O is behind the ``Recorder`` protocol, so the same code runs against a sound card
-(``SoundDeviceRecorder``, needs the ``audio`` extra) or the simulated plant (tests).
+(``SoundDeviceRecorder``, needs the ``audio`` extra) or a simulated device (tests).
 """
 
 from dataclasses import dataclass
@@ -12,7 +12,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from sweepeq.deconv import HarmonicIr, deconvolve, separate
-from sweepeq.plant import Plant
+from sweepeq.simulated import SimulatedDevice
 from sweepeq.sweep import SweepSpec, synchronized_sweep
 
 FloatArray = NDArray[np.float64]
@@ -29,13 +29,13 @@ class Recorder(Protocol):
 
 @dataclass(frozen=True)
 class SimulatedRecorder:
-    plant: Plant
+    device: SimulatedDevice
     seed: int = 0
 
     def play_record(self, out: FloatArray, fs: int) -> FloatArray:
-        if fs != self.plant.fs:
-            raise ValueError("sample rate differs from the plant's")
-        return self.plant.respond(out, np.random.default_rng(self.seed))
+        if fs != self.device.fs:
+            raise ValueError("sample rate differs from the device's")
+        return self.device.respond(out, np.random.default_rng(self.seed))
 
 
 @dataclass(frozen=True)

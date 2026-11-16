@@ -21,7 +21,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy import signal
 
-from sweepeq.plant import peaking_biquad, shelf_biquad
+from sweepeq.simulated import peaking_biquad, shelf_biquad
 
 FloatArray = NDArray[np.float64]
 

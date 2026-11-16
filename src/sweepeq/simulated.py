@@ -53,7 +53,7 @@ def shelf_biquad(kind: str, f0: float, gain_db: float, q: float, fs: float) -> F
 
 
 @dataclass(frozen=True)
-class Plant:
+class SimulatedDevice:
     fs: int = 48_000
     sos: FloatArray = field(default_factory=lambda: np.empty((0, 6)))
     """Linear filter as second-order sections (none: flat)."""

@@ -77,7 +77,7 @@ def freq_range(kind: str, spec: "PeqSpec") -> tuple[float, float]:
 
 def _band_db(kind: str, fc: float, gain: float, q: float, w: FloatArray, fs: float) -> FloatArray:
     """|H| in dB of one RBJ biquad at angular frequencies ``w`` (rad/sample)."""
-    from sweepeq.plant import peaking_biquad, shelf_biquad
+    from sweepeq.simulated import peaking_biquad, shelf_biquad
 
     if kind == "PK":
         c = peaking_biquad(fc, gain, q, fs)

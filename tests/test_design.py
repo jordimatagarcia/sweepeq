@@ -24,7 +24,7 @@ from sweepeq.design import (
     target_curve,
 )
 from sweepeq.peq import PeqSpec, fit_peq
-from sweepeq.plant import Plant, peaking_biquad
+from sweepeq.simulated import SimulatedDevice, peaking_biquad
 
 FS = 48_000
 F = np.geomspace(10.0, 24_000.0, 4000)
@@ -41,8 +41,8 @@ def device(notch: bool = False) -> Curve:
     ]
     if notch:
         bands.append(peaking_biquad(5000.0, -40.0, 30.0, FS))
-    plant = Plant(fs=FS, sos=np.vstack(bands), gain=0.5)
-    return Curve(F, 20 * np.log10(np.abs(plant.linear_response(F))))
+    dut = SimulatedDevice(fs=FS, sos=np.vstack(bands), gain=0.5)
+    return Curve(F, 20 * np.log10(np.abs(dut.linear_response(F))))
 
 
 # --- building blocks -----------------------------------------------------------------------
@@ -219,15 +219,15 @@ def test_design_cli_corrects_the_treble(tmp_path: Path) -> None:
     from sweepeq.measure import SimulatedRecorder, measure
     from sweepeq.sweep import SweepSpec
 
-    plant = Plant(fs=FS, sos=np.vstack([peaking_biquad(14_000.0, 6.0, 3.0, FS)]))
-    m = measure(SweepSpec(duration_s=2.0), SimulatedRecorder(plant))
+    dut = SimulatedDevice(fs=FS, sos=np.vstack([peaking_biquad(14_000.0, 6.0, 3.0, FS)]))
+    m = measure(SweepSpec(duration_s=2.0), SimulatedRecorder(dut))
     path, fir = tmp_path / "m.npz", tmp_path / "f.wav"
     m.save(path)
     assert main(["design", str(path), "--fir", str(fir), "--smooth", "0"]) == 0
     _, taps = wavfile.read(fir)
     g = np.array([1000.0, 14_000.0])
     corrected = fir_response_db(taps.astype(np.float64), g, FS) + 20 * np.log10(
-        np.abs(plant.linear_response(g))
+        np.abs(dut.linear_response(g))
     )
     assert corrected[1] - corrected[0] == pytest.approx(0.0, abs=0.5)
     # below the valid range (28 Hz) the correction fades out instead of reading the roll-off

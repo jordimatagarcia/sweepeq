@@ -15,7 +15,7 @@ from sweepeq.analysis import (
     write_text_curve,
 )
 from sweepeq.cli import main
-from sweepeq.plant import Plant, peaking_biquad
+from sweepeq.simulated import SimulatedDevice, peaking_biquad
 
 GRID = np.geomspace(20.0, 20_000.0, 2000)
 
@@ -80,11 +80,11 @@ def test_analyse_cli_against_a_rew_style_reference(tmp_path: Path) -> None:
     # measurement of it: the end-to-end check M2 repeats with real hardware.
     assert main(["simulate", "--duration", "2", "--out", str(tmp_path / "m.npz")]) == 0
     fs = 48_000
-    plant = Plant(
+    dut = SimulatedDevice(
         fs=fs,
         sos=np.vstack([peaking_biquad(80.0, 6.0, 1.0, fs), peaking_biquad(3000.0, -6.0, 2.0, fs)]),
     )
-    ref = Curve(GRID, 20 * np.log10(np.abs(plant.linear_response(GRID))) + 80.0)
+    ref = Curve(GRID, 20 * np.log10(np.abs(dut.linear_response(GRID))) + 80.0)
     write_text_curve(ref, tmp_path / "rew.txt")
     out = tmp_path / "result.txt"
     assert (

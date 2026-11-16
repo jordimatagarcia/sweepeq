@@ -15,8 +15,8 @@ from sweepeq.measure import (
     SimulatedRecorder,
     measure,
 )
-from sweepeq.plant import Plant, peaking_biquad
 from sweepeq.response import frequency_response, harmonic_distortion, hd_range, to_db
+from sweepeq.simulated import SimulatedDevice, peaking_biquad
 from sweepeq.sweep import SweepSpec
 
 REPORT_FREQS = (31.5, 63.0, 125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0, 16000.0)
@@ -85,7 +85,7 @@ def main(argv: list[str] | None = None) -> int:
         device = int(args.device) if args.device and args.device.isdigit() else args.device
         recorder = SoundDeviceRecorder(device, args.channel)
     else:
-        recorder = SimulatedRecorder(_demo_plant(args.fs))
+        recorder = SimulatedRecorder(_demo_device(args.fs))
     m = measure(spec, recorder)
     _report(m)
     if args.out is not None:
@@ -248,9 +248,9 @@ def _design(args: argparse.Namespace) -> int:
     return 0
 
 
-def _demo_plant(fs: int) -> Plant:
+def _demo_device(fs: int) -> SimulatedDevice:
     sos = np.vstack([peaking_biquad(80.0, 6.0, 1.0, fs), peaking_biquad(3000.0, -6.0, 2.0, fs)])
-    return Plant(fs=fs, sos=sos, delay_samples=240, poly=(0.05, 0.02), noise_rms=1e-4)
+    return SimulatedDevice(fs=fs, sos=sos, delay_samples=240, poly=(0.05, 0.02), noise_rms=1e-4)
 
 
 def _report(m: Measurement) -> None:
