@@ -81,8 +81,10 @@ Massarani and Kirkeby for deconvolution and inversion, Wefers for partitioned co
 
 ## Limits and what I'd do next
 
-- **Validation against REW with a measurement microphone** is prepared but not done
-  ([procedure](docs/validation.md)); the hardware check so far used a laptop microphone.
+- **Calibrated hardware validation is optional future work.** The software is tested
+  against exact simulated answers and published data; the one hardware check used a
+  laptop microphone. Comparing against REW with a calibrated measurement microphone is
+  prepared ([procedure](docs/validation.md)) but not done.
 - **ARM:** the NEON kernel exists but has not run on an ARM machine.
 - **Live mode** shares all its processing with the tested code but has not been
   verified on real audio devices, and its latency is dominated by the sound server's

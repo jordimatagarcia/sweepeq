@@ -1,4 +1,8 @@
-# Validation against REW (M2)
+# Validation against REW (optional)
+
+This is optional future work: it needs a calibrated measurement microphone (for example
+a miniDSP UMIK-1). The software it exercises is already tested against simulated devices
+with exact answers and against published data.
 
 Target: sweepeq's measurement of a real loudspeaker agrees with Room EQ Wizard (REW) on the
 same setup to within ±1 dB from 50 Hz to 10 kHz, both with 1/6-octave smoothing and
