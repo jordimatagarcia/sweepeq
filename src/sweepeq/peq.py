@@ -39,8 +39,8 @@ class PeqSpec:
     shelves: bool = True
     f_lo: float = 20.0
     f_hi: float = 16_000.0
-    max_boost_db: float = 6.0
-    max_cut_db: float = 24.0
+    boost_limit_db: float = 6.0
+    cut_limit_db: float = 24.0
     fs: float = 48_000.0
     n_points: int = 400
     """Frequencies (log-spaced over the band) the error is evaluated on."""
@@ -52,8 +52,8 @@ class PeqSpec:
             raise ValueError("with shelves, n_bands must be at least 2")
         if not 0.0 < self.f_lo < self.f_hi < self.fs / 2:
             raise ValueError("need 0 < f_lo < f_hi < fs/2")
-        if self.max_boost_db <= 0.0 or self.max_cut_db <= 0.0:
-            raise ValueError("max_boost_db and max_cut_db must be positive")
+        if self.boost_limit_db <= 0.0 or self.cut_limit_db <= 0.0:
+            raise ValueError("boost_limit_db and cut_limit_db must be positive")
 
 
 GAIN_PENALTY = 0.001
@@ -104,17 +104,17 @@ def preset_db(bands: list[Band], freqs: FloatArray, fs: float) -> FloatArray:
 class PeqFit:
     preset: Preset
     freqs: FloatArray
-    target_db: FloatArray
+    wanted_db: FloatArray
     fitted_db: FloatArray
     """EQ response without the preamp."""
 
     @property
     def rms_error_db(self) -> float:
-        return float(np.sqrt(np.mean((self.fitted_db - self.target_db) ** 2)))
+        return float(np.sqrt(np.mean((self.fitted_db - self.wanted_db) ** 2)))
 
     @property
     def max_error_db(self) -> float:
-        return float(np.max(np.abs(self.fitted_db - self.target_db)))
+        return float(np.max(np.abs(self.fitted_db - self.wanted_db)))
 
 
 def fit_peq(correction: Curve, spec: PeqSpec) -> PeqFit:
@@ -162,7 +162,7 @@ def _initial_bands(freqs: FloatArray, target: FloatArray, spec: PeqSpec) -> list
 
 
 def _clip_gain(g: float, spec: PeqSpec) -> float:
-    return float(np.clip(g, -spec.max_cut_db, spec.max_boost_db))
+    return float(np.clip(g, -spec.cut_limit_db, spec.boost_limit_db))
 
 
 def _refine(bands: list[Band], freqs: FloatArray, target: FloatArray, spec: PeqSpec) -> list[Band]:
@@ -171,8 +171,8 @@ def _refine(bands: list[Band], freqs: FloatArray, target: FloatArray, spec: PeqS
     for b in bands:
         x0 += [np.log(b.fc), b.gain_db, np.log(b.q)]
         f_min, f_max = freq_range(b.kind, spec)
-        lo += [np.log(f_min), -spec.max_cut_db, np.log(Q_MIN)]
-        hi += [np.log(f_max), spec.max_boost_db, np.log(Q_MAX if b.kind == "PK" else 2.0)]
+        lo += [np.log(f_min), -spec.cut_limit_db, np.log(Q_MIN)]
+        hi += [np.log(f_max), spec.boost_limit_db, np.log(Q_MAX if b.kind == "PK" else 2.0)]
     x0 = np.clip(x0, np.asarray(lo) + 1e-9, np.asarray(hi) - 1e-9)
 
     def unpack(x: FloatArray) -> list[Band]:

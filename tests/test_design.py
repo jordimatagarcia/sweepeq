@@ -17,8 +17,8 @@ from sweepeq.design import (
     DesignSpec,
     band_fade,
     beta_for_notch,
+    build_correction_fir,
     correction_db,
-    design_fir,
     regularised_inverse,
     soft_limit_boost,
     target_curve,
@@ -87,7 +87,7 @@ def test_invalid_specs_are_rejected() -> None:
     for kwargs in (
         dict(f_lo=0.0),
         dict(f_hi=30_000.0),
-        dict(max_boost_db=0.0),
+        dict(boost_limit_db=0.0),
         dict(n_taps=8),
         dict(phase="mixed"),
     ):
@@ -102,17 +102,17 @@ def test_invalid_specs_are_rejected() -> None:
 def test_corrected_response_within_1_db(phase: str) -> None:
     spec = DesignSpec(f_lo=40.0, f_hi=16_000.0, smoothing=0, phase=phase)  # type: ignore[arg-type]
     meas = device()
-    design = design_fir(correction_db(meas, FLAT, spec), spec)
+    design = build_correction_fir(correction_db(meas, FLAT, spec), spec)
     g = np.geomspace(60.0, 12_000.0, 500)
-    corrected = meas.at(g) + design.response_db(g)
+    corrected = meas.at(g) + design.magnitude_db(g)
     assert np.max(np.abs(corrected - np.median(corrected))) < 1.0
 
 
 def test_boost_limit_caps_a_deep_notch() -> None:
-    spec = DesignSpec(smoothing=0, max_boost_db=6.0)
+    spec = DesignSpec(smoothing=0, boost_limit_db=6.0)
     corr = correction_db(device(notch=True), FLAT, spec)
     assert np.max(corr.db) <= 6.0  # the 40 dB notch gets at most the limit, not +40 dB
-    design = design_fir(corr, spec)
+    design = build_correction_fir(corr, spec)
     assert design.peak_gain_db <= 6.2  # FIR ripple on top of the limit
 
 
@@ -126,29 +126,29 @@ def test_deeper_dips_get_less_boost_beyond_the_notch_depth() -> None:
 
 def test_no_correction_outside_the_band() -> None:
     spec = DesignSpec(f_lo=200.0, f_hi=5000.0, taper_oct=0.5, smoothing=0)
-    design = design_fir(correction_db(device(), FLAT, spec), spec)
+    design = build_correction_fir(correction_db(device(), FLAT, spec), spec)
     outside = np.array([40.0, 80.0, 12_000.0, 18_000.0])
-    assert np.max(np.abs(design.response_db(outside))) < 0.5
+    assert np.max(np.abs(design.magnitude_db(outside))) < 0.5
 
 
 @pytest.mark.parametrize("phase", ["minimum", "linear"])
 def test_fir_realises_the_correction(phase: str) -> None:
     spec = DesignSpec(smoothing=6, n_taps=4096, phase=phase)  # type: ignore[arg-type]
     corr = correction_db(device(), FLAT, spec)
-    design = design_fir(corr, spec)
+    design = build_correction_fir(corr, spec)
     g = np.geomspace(100.0, 16_000.0, 400)
-    assert np.max(np.abs(design.response_db(g) - corr.at(g))) < 0.25
+    assert np.max(np.abs(design.magnitude_db(g) - corr.at(g))) < 0.25
 
 
 def test_phase_properties() -> None:
     corr = correction_db(device(), FLAT, DesignSpec(smoothing=0))
-    lin = design_fir(corr, DesignSpec(phase="linear", n_taps=1024))
+    lin = build_correction_fir(corr, DesignSpec(phase="linear", n_taps=1024))
     np.testing.assert_allclose(lin.taps, lin.taps[::-1], atol=1e-9)
-    assert lin.latency_samples == pytest.approx(511.5)
-    mp = design_fir(corr, DesignSpec(phase="minimum", n_taps=1024))
+    assert lin.delay_samples == pytest.approx(511.5)
+    mp = build_correction_fir(corr, DesignSpec(phase="minimum", n_taps=1024))
     energy = np.cumsum(mp.taps**2) / np.sum(mp.taps**2)
     assert energy[50] > 0.9  # minimum phase: the energy is at the start
-    assert mp.latency_samples == 0.0
+    assert mp.delay_samples == 0.0
     assert mp.worst_case_gain_db >= mp.peak_gain_db
 
 
@@ -166,7 +166,7 @@ def test_alignment_band_sets_the_level() -> None:
 
 def test_peq_recovers_a_known_preset() -> None:
     preset = read_apo(REPO / "docs/data/headphone_preset_apo.txt")
-    curve = Curve(F, preset.response_db(F, FS) - preset.preamp_db)
+    curve = Curve(F, preset.magnitude_db(F, FS) - preset.preamp_db)
     fit = fit_peq(curve, PeqSpec(n_bands=len(preset.bands)))
     assert fit.max_error_db < 0.1
     assert fit.preset.preamp_db <= -max(np.max(fit.fitted_db), 0.0) + 1e-9
@@ -215,7 +215,7 @@ def test_design_cli_corrects_the_treble(tmp_path: Path) -> None:
     from scipy.io import wavfile
 
     from sweepeq.cli import main
-    from sweepeq.design import fir_response_db
+    from sweepeq.design import taps_response_db
     from sweepeq.measure import SimulatedRecorder, measure
     from sweepeq.sweep import SweepSpec
 
@@ -226,10 +226,10 @@ def test_design_cli_corrects_the_treble(tmp_path: Path) -> None:
     assert main(["design", str(path), "--fir", str(fir), "--smooth", "0"]) == 0
     _, taps = wavfile.read(fir)
     g = np.array([1000.0, 14_000.0])
-    corrected = fir_response_db(taps.astype(np.float64), g, FS) + 20 * np.log10(
+    corrected = taps_response_db(taps.astype(np.float64), g, FS) + 20 * np.log10(
         np.abs(dut.linear_response(g))
     )
     assert corrected[1] - corrected[0] == pytest.approx(0.0, abs=0.5)
     # below the valid range (28 Hz) the correction fades out instead of reading the roll-off
-    low = fir_response_db(taps.astype(np.float64), np.array([12.0, 20.0]), FS)
+    low = taps_response_db(taps.astype(np.float64), np.array([12.0, 20.0]), FS)
     assert np.max(np.abs(low)) < 0.5

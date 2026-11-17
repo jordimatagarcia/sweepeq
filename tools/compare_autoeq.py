@@ -45,7 +45,7 @@ def main() -> None:
     candidates = {"uncorrected": np.zeros_like(f), "AutoEq": r.equalization, "sweepeq": ours}
     if args.peq is not None:
         preset = read_apo(args.peq)
-        candidates["AutoEq PEQ"] = preset.response_db(f, 48_000.0) - preset.preamp_db
+        candidates["AutoEq PEQ"] = preset.magnitude_db(f, 48_000.0) - preset.preamp_db
     print("equalised response vs target (1/6 octave, level removed), 20 Hz-10 kHz:")
     k = f <= 10_000.0
     for name, eq in candidates.items():

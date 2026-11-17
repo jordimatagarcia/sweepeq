@@ -6,7 +6,7 @@ optionally, a parametric EQ (Equalizer APO text, for any parametric equaliser).
 
 ```bash
 uv run sweepeq design recordings/spk_pos*.npz --cal mic_cal.txt \
-    --max-boost 6 --taps 4096 --phase minimum --fir correction.wav --peq 8 --apo correction.txt
+    --boost-limit 6 --taps 4096 --phase minimum --fir correction.wav --peq 8 --apo correction.txt
 ```
 
 ## Method

@@ -94,7 +94,7 @@ reference in f64.
 On a laptop (one core), filtering 5 s of stereo audio with the 4096-tap correction designed
 from a real headphone measurement: direct FIR (AVX2+FMA) 82× real time, partitioned
 (B = 256) 485× real time. M5 measures this properly: the crossover between the methods
-over filter length and block size, latency, CPU load per channel, and x86 against ARM.
+over filter length and block size, latency, and CPU load per channel ([benchmarks](benchmarks.md)).
 
 ## Review fixes
 

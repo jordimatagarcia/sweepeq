@@ -23,6 +23,9 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y libasound2-dev   # cpal
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
+      # the NEON kernel is only compiled for AArch64; type-check it there too
+      - run: rustup target add aarch64-unknown-linux-gnu
+      - run: cargo clippy -p sweepeq-core --target aarch64-unknown-linux-gnu --all-targets -- -D warnings
       # sweepeq-py is tested from Python (python.yml), where it is built as an extension
       - run: cargo test --workspace --exclude sweepeq-py --release
       # smoke run of the benchmark (timings on shared runners are not compared)

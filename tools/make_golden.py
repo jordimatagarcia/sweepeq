@@ -16,7 +16,7 @@ from scipy import signal
 
 from sweepeq.analysis import Curve
 from sweepeq.autoeq import read_autoeq_csv
-from sweepeq.design import DesignSpec, correction_db, design_fir
+from sweepeq.design import DesignSpec, build_correction_fir, correction_db
 from sweepeq.simulated import SimulatedDevice, peaking_biquad
 from sweepeq.sweep import SweepSpec, synchronized_sweep
 
@@ -38,13 +38,15 @@ def device_correction(n_taps: int, phase: str) -> np.ndarray:
     )
     measured = Curve(f, 20 * np.log10(np.abs(SimulatedDevice(fs=FS, sos=sos).linear_response(f))))
     spec = DesignSpec(f_lo=40.0, smoothing=0, n_taps=n_taps, phase=phase)  # type: ignore[arg-type]
-    return design_fir(correction_db(measured, Curve(f, np.zeros_like(f)), spec), spec).taps
+    return build_correction_fir(
+        correction_db(measured, Curve(f, np.zeros_like(f)), spec), spec
+    ).taps
 
 
 def hd600_correction(n_taps: int) -> np.ndarray:
     r = read_autoeq_csv(ROOT / "testdata/autoeq/hd600_oratory1990.csv")
     spec = DesignSpec(f_lo=20.0, f_hi=20_000.0, n_taps=n_taps)
-    return design_fir(correction_db(r.raw, r.target, spec), spec).taps
+    return build_correction_fir(correction_db(r.raw, r.target, spec), spec).taps
 
 
 def inputs() -> dict[str, np.ndarray]:

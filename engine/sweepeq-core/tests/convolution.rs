@@ -19,7 +19,7 @@ fn direct_fir_matches_reference_for_every_kernel() {
             let x = noise(3000, 7);
             let want = reference(&x, &h);
             for sizes in CHUNKS {
-                let mut c = DirectFir::with_kernel(&h, 256, kernel);
+                let mut c = DirectFir::using_kernel(&h, 256, kernel);
                 let got = run(&mut c, &x, sizes);
                 let e = rel_error(&got, &want, &x, &h);
                 assert!(e < TOL, "{kernel:?} taps={taps} chunks={sizes:?}: {e:e}");

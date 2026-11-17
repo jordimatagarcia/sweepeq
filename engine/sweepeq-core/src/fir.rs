@@ -7,13 +7,13 @@
 //! ``max_block`` pieces. Latency: none.
 
 use crate::Convolver;
-use crate::kernels::{DotFn, Kernel};
+use crate::kernels::{InnerProductFn, Kernel};
 
 pub struct DirectFir {
-    taps_rev: Box<[f32]>,
+    reversed_taps: Box<[f32]>,
     buf: Box<[f32]>,
     max_block: usize,
-    dot: DotFn,
+    inner_product: InnerProductFn,
     kernel: Kernel,
 }
 
@@ -21,20 +21,20 @@ impl DirectFir {
     /// A filter with the given taps, processing blocks of up to `max_block` samples per
     /// internal step, with the fastest available kernel.
     pub fn new(taps: &[f32], max_block: usize) -> Self {
-        Self::with_kernel(taps, max_block, Kernel::detect())
+        Self::using_kernel(taps, max_block, Kernel::detect())
     }
 
     /// As [`DirectFir::new`] with a specific kernel. Panics if the CPU can't run it.
-    pub fn with_kernel(taps: &[f32], max_block: usize, kernel: Kernel) -> Self {
+    pub fn using_kernel(taps: &[f32], max_block: usize, kernel: Kernel) -> Self {
         assert!(!taps.is_empty(), "a filter needs at least one tap");
         assert!(max_block > 0, "max_block must be positive");
-        let taps_rev: Box<[f32]> = taps.iter().rev().copied().collect();
+        let reversed_taps: Box<[f32]> = taps.iter().rev().copied().collect();
         let buf = vec![0.0; taps.len() - 1 + max_block].into_boxed_slice();
         Self {
-            taps_rev,
+            reversed_taps,
             buf,
             max_block,
-            dot: kernel.function(),
+            inner_product: kernel.function(),
             kernel,
         }
     }
@@ -44,12 +44,12 @@ impl DirectFir {
     }
 
     fn process_piece(&mut self, input: &[f32], output: &mut [f32]) {
-        let n = self.taps_rev.len();
+        let n = self.reversed_taps.len();
         let hist = n - 1;
         let m = input.len();
         self.buf[hist..hist + m].copy_from_slice(input);
         for (i, y) in output.iter_mut().enumerate() {
-            *y = (self.dot)(&self.buf[i..i + n], &self.taps_rev);
+            *y = (self.inner_product)(&self.buf[i..i + n], &self.reversed_taps);
         }
         // keep the last n - 1 samples as the next piece's history
         self.buf.copy_within(m..m + hist, 0);
@@ -80,6 +80,6 @@ impl Convolver for DirectFir {
     }
 
     fn taps(&self) -> usize {
-        self.taps_rev.len()
+        self.reversed_taps.len()
     }
 }

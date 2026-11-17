@@ -93,7 +93,8 @@ between 128 and 256 taps, where the methods are tied.
 
 ## Not covered
 
-- **ARM (NEON):** the kernel exists and compiles for AArch64, but no ARM machine was
-  available to benchmark or test it on. A Raspberry Pi or an ARM CI runner would cover it.
+- **ARM (NEON):** the kernel is type-checked for AArch64 in CI (clippy), but no ARM machine
+  was available to run, test or benchmark it. A Raspberry Pi or an ARM CI runner would
+  cover it.
 - Multichannel load is the single-channel figure times the channel count; it was not
   measured separately.

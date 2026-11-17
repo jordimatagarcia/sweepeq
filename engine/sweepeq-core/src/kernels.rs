@@ -6,7 +6,7 @@
 //! wait on each other.
 
 /// `fn(a, b) -> Σ a[i]·b[i]` over two slices of equal length.
-pub type DotFn = fn(&[f32], &[f32]) -> f32;
+pub type InnerProductFn = fn(&[f32], &[f32]) -> f32;
 
 /// The dot-product implementations available on this machine.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -53,14 +53,14 @@ impl Kernel {
     }
 
     /// The kernel's function. Panics if the CPU can't run it (check [`Kernel::is_available`]).
-    pub fn function(self) -> DotFn {
+    pub fn function(self) -> InnerProductFn {
         assert!(self.is_available(), "{self:?} is not supported on this CPU");
         match self {
-            Kernel::Scalar => dot_scalar,
+            Kernel::Scalar => inner_product_scalar,
             #[cfg(all(target_arch = "x86_64", not(miri)))]
-            Kernel::Avx2Fma => dot_avx2_fma_checked,
+            Kernel::Avx2Fma => inner_product_avx2_safe,
             #[cfg(all(target_arch = "aarch64", not(miri)))]
-            Kernel::Neon => dot_neon_checked,
+            Kernel::Neon => inner_product_neon_safe,
             #[allow(unreachable_patterns)]
             _ => unreachable!(),
         }
@@ -69,7 +69,7 @@ impl Kernel {
 
 /// Portable dot product with four accumulators (the same summation structure as the SIMD
 /// kernels, so the compiler can vectorise it too).
-pub fn dot_scalar(a: &[f32], b: &[f32]) -> f32 {
+pub fn inner_product_scalar(a: &[f32], b: &[f32]) -> f32 {
     assert_eq!(a.len(), b.len());
     let mut acc = [0.0f32; 4];
     let chunks = a.len() / 4;
@@ -86,93 +86,89 @@ pub fn dot_scalar(a: &[f32], b: &[f32]) -> f32 {
 }
 
 #[cfg(all(target_arch = "x86_64", not(miri)))]
-fn dot_avx2_fma_checked(a: &[f32], b: &[f32]) -> f32 {
+fn inner_product_avx2_safe(a: &[f32], b: &[f32]) -> f32 {
     assert_eq!(a.len(), b.len());
-    // SAFETY: this function is only handed out by `Kernel::function` after
-    // `Kernel::is_available` confirmed AVX2 and FMA, and the lengths are equal.
-    unsafe { dot_avx2_fma(a, b) }
+    // SAFETY: `Kernel::function` only returns this after `Kernel::is_available` has found
+    // AVX2 and FMA on this CPU.
+    unsafe { inner_product_avx2(a, b) }
 }
 
+/// Inner product in 8-lane AVX2 registers, four independent sums in flight.
+///
 /// # Safety
-/// The CPU must support AVX2 and FMA, and `a.len() == b.len()`.
+/// Requires AVX2 and FMA at run time.
 #[cfg(all(target_arch = "x86_64", not(miri)))]
 #[target_feature(enable = "avx2,fma")]
-unsafe fn dot_avx2_fma(a: &[f32], b: &[f32]) -> f32 {
+unsafe fn inner_product_avx2(a: &[f32], b: &[f32]) -> f32 {
     use std::arch::x86_64::*;
-    let n = a.len();
-    let (pa, pb) = (a.as_ptr(), b.as_ptr());
-    let mut acc = [_mm256_setzero_ps(); 4];
-    let mut i = 0;
-    // SAFETY (all loads): `i + 32 <= n` (or `i + 8 <= n` below) keeps every unaligned
-    // 8-lane load inside both slices, which have length `n`.
-    while i + 32 <= n {
-        for (k, sum) in acc.iter_mut().enumerate() {
-            let x = unsafe { _mm256_loadu_ps(pa.add(i + 8 * k)) };
-            let y = unsafe { _mm256_loadu_ps(pb.add(i + 8 * k)) };
-            *sum = _mm256_fmadd_ps(x, y, *sum);
+
+    // Loads take `&[f32; 8]`: the array type guarantees each unaligned load is in bounds.
+    // SAFETY: `x` is an array of exactly 8 floats.
+    let load = |x: &[f32; 8]| unsafe { _mm256_loadu_ps(x.as_ptr()) };
+    let (wide_a, rest_a) = a.as_chunks::<32>();
+    let (wide_b, rest_b) = b.as_chunks::<32>();
+    let mut sums = [_mm256_setzero_ps(); 4];
+    for (xa, xb) in wide_a.iter().zip(wide_b) {
+        let (xs, ys) = (xa.as_chunks::<8>().0, xb.as_chunks::<8>().0);
+        for (lane, (x, y)) in xs.iter().zip(ys).enumerate() {
+            sums[lane] = _mm256_fmadd_ps(load(x), load(y), sums[lane]);
         }
-        i += 32;
     }
-    while i + 8 <= n {
-        let x = unsafe { _mm256_loadu_ps(pa.add(i)) };
-        let y = unsafe { _mm256_loadu_ps(pb.add(i)) };
-        acc[0] = _mm256_fmadd_ps(x, y, acc[0]);
-        i += 8;
+    let (narrow_a, tail_a) = rest_a.as_chunks::<8>();
+    let (narrow_b, tail_b) = rest_b.as_chunks::<8>();
+    for (x, y) in narrow_a.iter().zip(narrow_b) {
+        sums[0] = _mm256_fmadd_ps(load(x), load(y), sums[0]);
     }
-    let s = _mm256_add_ps(_mm256_add_ps(acc[0], acc[1]), _mm256_add_ps(acc[2], acc[3]));
-    // horizontal sum of 8 lanes
-    let hi = _mm256_extractf128_ps(s, 1);
-    let lo = _mm256_castps256_ps128(s);
-    let q = _mm_add_ps(lo, hi);
-    let d = _mm_add_ps(q, _mm_movehl_ps(q, q));
-    let r = _mm_add_ss(d, _mm_shuffle_ps(d, d, 0x55));
-    let mut total = _mm_cvtss_f32(r);
-    while i < n {
-        total += a[i] * b[i];
-        i += 1;
-    }
-    total
+    let total = _mm256_add_ps(
+        _mm256_add_ps(sums[0], sums[1]),
+        _mm256_add_ps(sums[2], sums[3]),
+    );
+    let mut lanes = [0.0f32; 8];
+    // SAFETY: `lanes` holds exactly 8 floats.
+    unsafe { _mm256_storeu_ps(lanes.as_mut_ptr(), total) };
+    let tail: f32 = tail_a.iter().zip(tail_b).map(|(x, y)| x * y).sum();
+    (lanes[0] + lanes[4])
+        + (lanes[1] + lanes[5])
+        + (lanes[2] + lanes[6])
+        + (lanes[3] + lanes[7])
+        + tail
 }
 
 #[cfg(all(target_arch = "aarch64", not(miri)))]
-fn dot_neon_checked(a: &[f32], b: &[f32]) -> f32 {
+fn inner_product_neon_safe(a: &[f32], b: &[f32]) -> f32 {
     assert_eq!(a.len(), b.len());
-    // SAFETY: only handed out after `is_available` confirmed NEON; lengths are equal.
-    unsafe { dot_neon(a, b) }
+    // SAFETY: only returned by `Kernel::function` after NEON was found on this CPU.
+    unsafe { inner_product_neon(a, b) }
 }
 
+/// Inner product in 4-lane NEON registers, four independent sums in flight.
+///
 /// # Safety
-/// The CPU must support NEON, and `a.len() == b.len()`.
+/// Requires NEON at run time.
 #[cfg(all(target_arch = "aarch64", not(miri)))]
 #[target_feature(enable = "neon")]
-unsafe fn dot_neon(a: &[f32], b: &[f32]) -> f32 {
+unsafe fn inner_product_neon(a: &[f32], b: &[f32]) -> f32 {
     use std::arch::aarch64::*;
-    let n = a.len();
-    let (pa, pb) = (a.as_ptr(), b.as_ptr());
-    let mut acc = [vdupq_n_f32(0.0); 4];
-    let mut i = 0;
-    // SAFETY (all loads): `i + 16 <= n` (or `i + 4 <= n`) keeps every 4-lane load in bounds.
-    while i + 16 <= n {
-        for (k, sum) in acc.iter_mut().enumerate() {
-            let x = unsafe { vld1q_f32(pa.add(i + 4 * k)) };
-            let y = unsafe { vld1q_f32(pb.add(i + 4 * k)) };
-            *sum = vfmaq_f32(*sum, x, y);
+
+    // SAFETY: `x` is an array of exactly 4 floats.
+    let load = |x: &[f32; 4]| unsafe { vld1q_f32(x.as_ptr()) };
+    let (wide_a, rest_a) = a.as_chunks::<16>();
+    let (wide_b, rest_b) = b.as_chunks::<16>();
+    let mut sums = [vdupq_n_f32(0.0); 4];
+    for (xa, xb) in wide_a.iter().zip(wide_b) {
+        let (xs, ys) = (xa.as_chunks::<4>().0, xb.as_chunks::<4>().0);
+        for (lane, (x, y)) in xs.iter().zip(ys).enumerate() {
+            sums[lane] = vfmaq_f32(sums[lane], load(x), load(y));
         }
-        i += 16;
     }
-    while i + 4 <= n {
-        let x = unsafe { vld1q_f32(pa.add(i)) };
-        let y = unsafe { vld1q_f32(pb.add(i)) };
-        acc[0] = vfmaq_f32(acc[0], x, y);
-        i += 4;
+    let (narrow_a, tail_a) = rest_a.as_chunks::<4>();
+    let (narrow_b, tail_b) = rest_b.as_chunks::<4>();
+    for (x, y) in narrow_a.iter().zip(narrow_b) {
+        sums[0] = vfmaq_f32(sums[0], load(x), load(y));
     }
-    let s = vaddq_f32(vaddq_f32(acc[0], acc[1]), vaddq_f32(acc[2], acc[3]));
-    let mut total = vaddvq_f32(s);
-    while i < n {
-        total += a[i] * b[i];
-        i += 1;
-    }
-    total
+    let total = vaddq_f32(vaddq_f32(sums[0], sums[1]), vaddq_f32(sums[2], sums[3]));
+    let tail: f32 = tail_a.iter().zip(tail_b).map(|(x, y)| x * y).sum();
+    vaddvq_f32(total) + tail
 }
 
 #[cfg(test)]

@@ -15,7 +15,7 @@ import numpy as np
 
 from sweepeq.analysis import Curve, smooth
 from sweepeq.autoeq import read_autoeq_csv
-from sweepeq.design import DesignSpec, correction_db, design_fir
+from sweepeq.design import DesignSpec, build_correction_fir, correction_db
 
 ROOT = Path(__file__).resolve().parents[1]
 FS = 48_000
@@ -42,7 +42,7 @@ def main(out: Path) -> None:
 
     r = read_autoeq_csv(ROOT / "testdata/autoeq/hd600_oratory1990.csv")
     spec = DesignSpec(f_lo=20.0, f_hi=20_000.0, n_taps=4096, fs=FS)
-    design = design_fir(correction_db(r.raw, r.target, spec), spec)
+    design = build_correction_fir(correction_db(r.raw, r.target, spec), spec)
     f = r.freqs
     corrected = r.raw.db + engine_response_db(design.taps.astype(np.float32), f)
     k = (f >= 300) & (f <= 3000)

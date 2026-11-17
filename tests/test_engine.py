@@ -16,7 +16,7 @@ else:
     sweepeq_engine = pytest.importorskip("sweepeq_engine")
 
 from sweepeq.autoeq import read_autoeq_csv
-from sweepeq.design import DesignSpec, correction_db, design_fir
+from sweepeq.design import DesignSpec, build_correction_fir, correction_db
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -24,7 +24,7 @@ REPO = Path(__file__).resolve().parents[1]
 def hd600_taps() -> np.ndarray:
     r = read_autoeq_csv(REPO / "testdata/autoeq/hd600_oratory1990.csv")
     spec = DesignSpec(f_lo=20.0, f_hi=20_000.0, n_taps=2048)
-    return design_fir(correction_db(r.raw, r.target, spec), spec).taps.astype(np.float32)
+    return build_correction_fir(correction_db(r.raw, r.target, spec), spec).taps.astype(np.float32)
 
 
 def rel_error(y: np.ndarray, ref: np.ndarray, h: np.ndarray, x: np.ndarray) -> float:

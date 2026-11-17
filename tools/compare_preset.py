@@ -43,7 +43,7 @@ def main() -> None:
     measured = (
         measured_curve(args.on, f, args.smooth).db - measured_curve(args.off, f, args.smooth).db
     )
-    predicted = smooth(Curve(f, read_apo(args.preset).response_db(f, args.fs_eq)), args.smooth).db
+    predicted = smooth(Curve(f, read_apo(args.preset).magnitude_db(f, args.fs_eq)), args.smooth).db
     in_range = (f >= BANDS[0][0]) & (f <= BANDS[-1][1])
     offset = float(np.median((measured - predicted)[in_range]))
     print(f"level offset (measured - predicted): {offset:+.2f} dB")

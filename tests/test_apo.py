@@ -43,7 +43,7 @@ def test_parse_apo_preset() -> None:
     assert [b.kind for b in preset.bands] == ["LS", "PK", "HS"]
     assert preset.bands[2].q == pytest.approx(0.7071)
     f = np.array([217.4, 1000.0])
-    db = preset.response_db(f, FS)
+    db = preset.magnitude_db(f, FS)
     # at 217.4 Hz: preamp + the peak, plus the small tails of the shelves
     expected = -4.2 + mag_db(peaking_biquad(217.4, 4.4, 2.66, FS), 217.4)
     assert db[0] == pytest.approx(expected, abs=0.3)
@@ -56,7 +56,7 @@ def test_peaking_filter_needs_q() -> None:
 
 def test_empty_preset_is_flat() -> None:
     preset = parse_apo("nothing")
-    np.testing.assert_allclose(preset.response_db(np.array([100.0, 1000.0]), FS), 0.0)
+    np.testing.assert_allclose(preset.magnitude_db(np.array([100.0, 1000.0]), FS), 0.0)
 
 
 @pytest.mark.parametrize(

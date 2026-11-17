@@ -40,8 +40,8 @@ def read_autoeq_csv(path: Path) -> AutoEqResult:
     return AutoEqResult(f, Curve(f, d["raw"]), Curve(f, d["target"]), d["equalization"])
 
 
-def sweepeq_correction(r: AutoEqResult, max_boost_db: float = 6.0) -> FloatArray:
-    spec = DesignSpec(f_lo=20.0, f_hi=20_000.0, smoothing=6.0, max_boost_db=max_boost_db)
+def sweepeq_correction(r: AutoEqResult, boost_limit_db: float = 6.0) -> FloatArray:
+    spec = DesignSpec(f_lo=20.0, f_hi=20_000.0, smoothing=6.0, boost_limit_db=boost_limit_db)
     return correction_db(r.raw, r.target, spec).db
 
 

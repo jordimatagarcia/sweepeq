@@ -12,7 +12,7 @@ fn small_direct_and_partitioned() {
     let h = filter(37, 1);
     let x = noise(300, 2);
     let want = reference(&x, &h);
-    let mut d = DirectFir::with_kernel(&h, 16, Kernel::detect());
+    let mut d = DirectFir::using_kernel(&h, 16, Kernel::detect());
     assert!(rel_error(&run(&mut d, &x, &[1, 5, 16, 33]), &want, &x, &h) < 5e-7);
     let mut p = Partitioned::new(&h, 8);
     let got = run(&mut p, &x, &[3, 8, 20]);

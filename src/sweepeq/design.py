@@ -49,8 +49,8 @@ class DesignSpec:
     f_hi: float = 16_000.0
     taper_oct: float = 0.5
     """Width of the fade at each band edge (octaves, outside the band)."""
-    max_boost_db: float = 6.0
-    max_cut_db: float = 24.0
+    boost_limit_db: float = 6.0
+    cut_limit_db: float = 24.0
     notch_depth_db: float = 20.0
     """Dips deeper than this are progressively left unfilled (sets β)."""
     knee_db: float = 0.5
@@ -66,9 +66,9 @@ class DesignSpec:
     def __post_init__(self) -> None:
         if not 0.0 < self.f_lo < self.f_hi <= self.fs / 2:
             raise ValueError("need 0 < f_lo < f_hi <= fs/2")
-        if min(self.max_boost_db, self.max_cut_db, self.notch_depth_db, self.knee_db) <= 0.0:
+        if min(self.boost_limit_db, self.cut_limit_db, self.notch_depth_db, self.knee_db) <= 0.0:
             raise ValueError(
-                "max_boost_db, max_cut_db, notch_depth_db and knee_db must be positive"
+                "boost_limit_db, cut_limit_db, notch_depth_db and knee_db must be positive"
             )
         if self.taper_oct < 0.0 or self.smoothing < 0.0:
             raise ValueError("taper_oct and smoothing must not be negative")
@@ -110,19 +110,19 @@ def beta_for_notch(notch_depth_db: float) -> float:
     return float(10.0 ** (-notch_depth_db / 10.0))
 
 
-def soft_limit_boost(c_db: FloatArray, max_boost_db: float, knee_db: float) -> FloatArray:
-    """Limit positive values to ``max_boost_db`` with a soft knee; cuts pass unchanged."""
+def soft_limit_boost(c_db: FloatArray, boost_limit_db: float, knee_db: float) -> FloatArray:
+    """Limit positive values to ``boost_limit_db`` with a soft knee; cuts pass unchanged."""
     b = np.maximum(c_db, 0.0)
-    limited = -knee_db * np.logaddexp(-b / knee_db, -max_boost_db / knee_db)
+    limited = -knee_db * np.logaddexp(-b / knee_db, -boost_limit_db / knee_db)
     return np.asarray(np.where(c_db > 0.0, limited, c_db), dtype=np.float64)
 
 
-def regularised_inverse(d: FloatArray, beta: float, max_cut_db: float) -> FloatArray:
+def regularised_inverse(d: FloatArray, beta: float, cut_limit_db: float) -> FloatArray:
     """Correction gain (linear) for deviation ``d``: exact inverse of peaks (limited to
-    ``max_cut_db``), Tikhonov-regularised inverse of dips."""
+    ``cut_limit_db``), Tikhonov-regularised inverse of dips."""
     d = np.maximum(np.asarray(d, dtype=np.float64), 1e-12)
     c = np.where(d >= 1.0, 1.0 / d, (d + beta) / (d * d + beta))
-    return np.asarray(np.maximum(c, 10.0 ** (-max_cut_db / 20.0)), dtype=np.float64)
+    return np.asarray(np.maximum(c, 10.0 ** (-cut_limit_db / 20.0)), dtype=np.float64)
 
 
 def band_fade(freqs: FloatArray, spec: DesignSpec) -> FloatArray:
@@ -151,9 +151,9 @@ def correction_db(measured: Curve, target: Curve, spec: DesignSpec) -> Curve:
     """The correction to apply (dB) on the measurement's frequency grid."""
     dev = deviation(measured, target, spec)
     c = regularised_inverse(
-        10.0 ** (dev.db / 20.0), beta_for_notch(spec.notch_depth_db), spec.max_cut_db
+        10.0 ** (dev.db / 20.0), beta_for_notch(spec.notch_depth_db), spec.cut_limit_db
     )
-    c_db = soft_limit_boost(20.0 * np.log10(c), spec.max_boost_db, spec.knee_db)
+    c_db = soft_limit_boost(20.0 * np.log10(c), spec.boost_limit_db, spec.knee_db)
     return Curve(dev.freqs, c_db * band_fade(dev.freqs, spec))
 
 
@@ -161,18 +161,18 @@ def correction_db(measured: Curve, target: Curve, spec: DesignSpec) -> Curve:
 
 
 @dataclass(frozen=True)
-class Design:
+class CorrectionFilter:
     spec: DesignSpec
     desired: Curve
     """Correction asked for (dB)."""
     taps: FloatArray
 
     @property
-    def latency_samples(self) -> float:
+    def delay_samples(self) -> float:
         return 0.0 if self.spec.phase == "minimum" else (self.spec.n_taps - 1) / 2.0
 
-    def response_db(self, freqs: FloatArray) -> FloatArray:
-        return fir_response_db(self.taps, freqs, self.spec.fs)
+    def magnitude_db(self, freqs: FloatArray) -> FloatArray:
+        return taps_response_db(self.taps, freqs, self.spec.fs)
 
     @property
     def peak_gain_db(self) -> float:
@@ -187,7 +187,7 @@ class Design:
         return float(20.0 * np.log10(np.sum(np.abs(self.taps))))
 
 
-def design_fir(correction: Curve, spec: DesignSpec) -> Design:
+def build_correction_fir(correction: Curve, spec: DesignSpec) -> CorrectionFilter:
     """FIR filter realising ``correction`` (dB), by frequency sampling."""
     n_fft = max(1 << 16, 8 * spec.n_taps)
     f = np.fft.rfftfreq(n_fft, 1.0 / spec.fs)
@@ -205,7 +205,7 @@ def design_fir(correction: Curve, spec: DesignSpec) -> Design:
         k = np.arange(len(mag))
         h_full = np.fft.irfft(mag * np.exp(-1j * np.pi * k * (n - 1) / n_fft), n_fft)
         taps = h_full[:n] * np.hanning(n + 2)[1:-1]
-    return Design(spec, correction, np.asarray(taps, dtype=np.float64))
+    return CorrectionFilter(spec, correction, np.asarray(taps, dtype=np.float64))
 
 
 def _half_hann_tail(n: int, n_tail: int) -> FloatArray:
@@ -214,7 +214,7 @@ def _half_hann_tail(n: int, n_tail: int) -> FloatArray:
     return w
 
 
-def fir_response_db(taps: FloatArray, freqs: FloatArray, fs: float) -> FloatArray:
+def taps_response_db(taps: FloatArray, freqs: FloatArray, fs: float) -> FloatArray:
     from scipy import signal
 
     _, h = signal.freqz(taps, worN=np.asarray(freqs), fs=fs)

@@ -61,7 +61,7 @@ class Preset:
                 )
         return np.vstack(rows) if rows else np.empty((0, 6))
 
-    def response_db(self, freqs: FloatArray, fs: float) -> FloatArray:
+    def magnitude_db(self, freqs: FloatArray, fs: float) -> FloatArray:
         """Magnitude (dB) of preamp plus bands at ``freqs``, at sample rate ``fs``."""
         db = np.full(len(freqs), self.preamp_db)
         sos = self.sos(fs)

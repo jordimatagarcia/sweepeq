@@ -84,7 +84,7 @@ fn direct_fir_reproduces_the_golden_vectors() {
             if !kernel.is_available() {
                 continue;
             }
-            let mut f = DirectFir::with_kernel(&c.taps, 512, kernel);
+            let mut f = DirectFir::using_kernel(&c.taps, 512, kernel);
             let got = run(&mut f, &c.input, &[480, 17, 1024]);
             let e = rel_error(&got, &c.expected, &c);
             assert!(e < TOL, "{} {kernel:?}: {e:e}", c.name);

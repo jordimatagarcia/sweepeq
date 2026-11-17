@@ -113,13 +113,13 @@ pub fn run(opts: &Options) -> Result<String> {
         push(
             format!("direct-{simd:?}"),
             0,
-            &mut DirectFir::with_kernel(&h, 1024, simd),
+            &mut DirectFir::using_kernel(&h, 1024, simd),
         );
         if simd != Kernel::Scalar {
             push(
                 "direct-Scalar".into(),
                 0,
-                &mut DirectFir::with_kernel(&h, 1024, Kernel::Scalar),
+                &mut DirectFir::using_kernel(&h, 1024, Kernel::Scalar),
             );
         }
         for &b in blocks {
@@ -129,7 +129,7 @@ pub fn run(opts: &Options) -> Result<String> {
     Ok(to_json(&cases, opts, simd))
 }
 
-fn cpu_model() -> String {
+fn processor_name() -> String {
     std::fs::read_to_string("/proc/cpuinfo")
         .ok()
         .and_then(|s| {
@@ -167,7 +167,7 @@ fn to_json(cases: &[Case], opts: &Options, simd: Kernel) -> String {
     format!(
         "{{\n  \"cpu\": \"{}\",\n  \"arch\": \"{}\",\n  \"simd\": \"{simd:?}\",\n  \"sample_rate\": {FS},\n  \
          \"chunk\": {},\n  \"quick\": {},\n  \"cases\": [\n{}\n  ]\n}}\n",
-        escape(&cpu_model()),
+        escape(&processor_name()),
         std::env::consts::ARCH,
         opts.chunk,
         opts.quick,

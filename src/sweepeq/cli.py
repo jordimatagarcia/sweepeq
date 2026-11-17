@@ -24,12 +24,12 @@ REPORT_FREQS = (31.5, 63.0, 125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0,
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="sweepeq", description=__doc__)
-    sub = parser.add_subparsers(dest="command", required=True)
+    commands = parser.add_subparsers(dest="command", required=True)
     for name, help_ in (
         ("measure", "measure a device through the sound card"),
         ("simulate", "measure a simulated device (no hardware)"),
     ):
-        p = sub.add_parser(name, help=help_)
+        p = commands.add_parser(name, help=help_)
         p.add_argument("--out", type=Path, help="save the measurement (.npz)")
         p.add_argument("--f1", type=float, default=20.0)
         p.add_argument("--f2", type=float, default=20_000.0)
@@ -39,8 +39,8 @@ def main(argv: list[str] | None = None) -> int:
         if name == "measure":
             p.add_argument("--device", default=None, help="sound device (name or index)")
             p.add_argument("--channel", type=int, default=0, help="input channel (0-based)")
-    sub.add_parser("devices", help="list sound devices")
-    a = sub.add_parser("analyse", help="smooth, calibrate, average and compare measurements")
+    commands.add_parser("devices", help="list sound devices")
+    a = commands.add_parser("analyse", help="smooth, calibrate, average and compare measurements")
     a.add_argument("measurements", type=Path, nargs="+", help="saved .npz measurements")
     a.add_argument("--cal", type=Path, help="microphone calibration file")
     a.add_argument("--smooth", type=float, default=6.0, help="1/N octave (0: none)")
@@ -48,14 +48,14 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--range", type=float, nargs=2, default=(50.0, 10_000.0), metavar=("LO", "HI"))
     a.add_argument("--export", type=Path, help="write the result as REW-importable text")
     a.add_argument("--plot", type=Path, help="save a plot (needs the plot extra)")
-    d = sub.add_parser("design", help="design a correction filter from measurements")
+    d = commands.add_parser("design", help="design a correction filter from measurements")
     d.add_argument("measurements", type=Path, nargs="+", help="saved .npz measurements")
     d.add_argument("--cal", type=Path, help="microphone calibration file")
     d.add_argument("--target", type=Path, help="target curve text file (default: flat)")
     d.add_argument("--tilt", type=float, default=0.0, help="target tilt (dB/octave)")
     d.add_argument("--bass", type=float, default=0.0, help="target bass shelf (dB)")
     d.add_argument("--band", type=float, nargs=2, default=(20.0, 16_000.0), metavar=("LO", "HI"))
-    d.add_argument("--max-boost", type=float, default=6.0, help="dB")
+    d.add_argument("--boost-limit", type=float, default=6.0, help="dB")
     d.add_argument("--smooth", type=float, default=6.0, help="1/N octave before inversion")
     d.add_argument("--taps", type=int, default=4096)
     d.add_argument("--phase", choices=("minimum", "linear"), default="minimum")
@@ -65,14 +65,14 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument("--apo", type=Path, help="write the parametric EQ (Equalizer APO text)")
     args = parser.parse_args(argv)
     if args.command == "design":
-        return _design(args)
+        return _cmd_design(args)
     if args.command == "devices":
         import sounddevice as sd
 
         print(sd.query_devices())
         return 0
     if args.command == "analyse":
-        return _analyse(args)
+        return _cmd_analyse(args)
 
     try:
         spec = SweepSpec(args.f1, args.f2, args.duration, args.fs, amplitude=args.level)
@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _analyse(args: argparse.Namespace) -> int:
+def _cmd_analyse(args: argparse.Namespace) -> int:
     from sweepeq.analysis import (
         apply_calibration,
         average,
@@ -157,11 +157,11 @@ def _plot(result: Curve, reference: Curve | None, path: Path) -> None:
     fig.savefig(path, dpi=150)
 
 
-def _design(args: argparse.Namespace) -> int:
+def _cmd_design(args: argparse.Namespace) -> int:
     from sweepeq.analysis import apply_calibration, average, read_text_curve, response_curve
     from sweepeq.apo import format_apo
     from sweepeq.deconv import valid_range
-    from sweepeq.design import DesignSpec, correction_db, design_fir, target_curve
+    from sweepeq.design import DesignSpec, build_correction_fir, correction_db, target_curve
     from sweepeq.measure import load_linear
     from sweepeq.peq import PeqSpec, fit_peq
 
@@ -186,7 +186,7 @@ def _design(args: argparse.Namespace) -> int:
         spec = DesignSpec(
             f_lo=band[0],
             f_hi=band[1],
-            max_boost_db=args.max_boost,
+            boost_limit_db=args.boost_limit,
             smoothing=args.smooth,
             fs=args.fs,
             n_taps=args.taps,
@@ -204,12 +204,12 @@ def _design(args: argparse.Namespace) -> int:
     shape = target_curve(measured.freqs, args.tilt, args.bass)
     target = Curve(shape.freqs, shape.db + (base.at(shape.freqs) if base else 0.0))
     correction = correction_db(measured, target, spec)
-    design = design_fir(correction, spec)
+    design = build_correction_fir(correction, spec)
     check = np.geomspace(band[0], band[1], 400)
-    err = design.response_db(check) - correction.at(check)
+    err = design.magnitude_db(check) - correction.at(check)
     print(
         f"FIR: {spec.n_taps} taps at {spec.fs} Hz, {spec.phase} phase, latency "
-        f"{design.latency_samples / spec.fs * 1e3:.1f} ms; matches the correction to "
+        f"{design.delay_samples / spec.fs * 1e3:.1f} ms; matches the correction to "
         f"{np.max(np.abs(err)):.2f} dB over {band[0]:.0f}-{band[1]:.0f} Hz"
     )
     print(
@@ -233,7 +233,7 @@ def _design(args: argparse.Namespace) -> int:
                 f_lo=band[0],
                 f_hi=band[1],
                 fs=spec.fs,
-                max_boost_db=args.max_boost,
+                boost_limit_db=args.boost_limit,
             ),
         )
         print(
